@@ -60,6 +60,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at 2px 2px, hsl(var(--muted)) 1px, transparent 0);
+    background-size: 40px 40px;
   }
 }
 
@@ -72,6 +74,12 @@
   }
   .animate-glow-pulse {
     animation: glow-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .glass {
+    @apply bg-background/60 backdrop-blur-md border-white/10;
+  }
+  .glass-dark {
+    @apply bg-card/40 backdrop-blur-lg border-white/5;
   }
 }
 
