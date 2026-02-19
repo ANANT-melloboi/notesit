@@ -1,0 +1,328 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user account within the MediaVault application, primarily for linking notes and settings. Authentication is handled by an external system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "A display name chosen by the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, primarily for communication or display purposes. Not used for authentication.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserSettings",
+      "type": "object",
+      "description": "Stores individual user preferences and settings for the MediaVault application.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique identifier for the User entity. (Relationship: User 1:1 UserSettings). This also serves as the primary key for UserSettings."
+        },
+        "brightnessLevel": {
+          "type": "number",
+          "description": "The preferred brightness level for the app's user interface, typically a value between 0.0 (darkest) and 1.0 (brightest)."
+        },
+        "notificationTimeIntervalMinutes": {
+          "type": "number",
+          "description": "The duration in minutes for which notifications should be displayed or an interval for recurring reminders."
+        },
+        "notificationSoundEnabled": {
+          "type": "boolean",
+          "description": "Indicates whether notification sounds are enabled for the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user settings were first created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user settings were last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "brightnessLevel",
+        "notificationTimeIntervalMinutes",
+        "notificationSoundEnabled",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Note": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Note",
+      "type": "object",
+      "description": "Represents a single rich media note created by a user, capable of containing various types of media content.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Note entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this note. (Relationship: User 1:N Note)"
+        },
+        "title": {
+          "type": "string",
+          "description": "A concise title or headline for the note."
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional longer text description or summary of the note's content."
+        },
+        "isLocked": {
+          "type": "boolean",
+          "description": "Indicates whether the note is protected by a passkey and requires authentication to view."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the note was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the note was last updated.",
+          "format": "date-time"
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tag entities associated with this note for organization. (Relationship: Tag N:N Note)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "isLocked",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MediaContent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MediaContent",
+      "type": "object",
+      "description": "Represents an individual piece of media (text, image, voice, scribble) embedded within a Note.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MediaContent entity."
+        },
+        "noteId": {
+          "type": "string",
+          "description": "Reference to the Note this media content belongs to. (Relationship: Note 1:N MediaContent)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of media content.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contentUrl": {
+          "type": "string",
+          "description": "URL pointing to the hosted media file (e.g., image, voice recording, scribble data). Applicable for 'image', 'voice', 'scribble' types.",
+          "format": "uri"
+        },
+        "textContent": {
+          "type": "string",
+          "description": "The actual text content for 'text' type media."
+        },
+        "order": {
+          "type": "number",
+          "description": "An integer representing the display order of this media content within its parent note."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the media content was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "noteId",
+        "type",
+        "order",
+        "createdAt"
+      ]
+    },
+    "Tag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tag",
+      "type": "object",
+      "description": "Represents a user-defined tag or category used to organize notes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Tag entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created this tag. Tags are user-specific. (Relationship: User 1:N Tag)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the tag (e.g., 'Work', 'Personal', 'Ideas')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the tag was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the tag was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores core profile information for each authenticated user. The document ID `{userId}` must match Firebase Authentication's `request.auth.uid`."
+        }
+      },
+      {
+        "path": "/users/{userId}/settings/{settingsId}",
+        "definition": {
+          "entityName": "UserSettings",
+          "schema": {
+            "$ref": "#/backend/entities/UserSettings"
+          },
+          "description": "Stores individual user preferences and app settings. The document ID `{settingsId}` should match the parent `{userId}`. Includes denormalized 'userId' field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching `request.auth.uid`."
+            },
+            {
+              "name": "settingsId",
+              "description": "The unique ID for the user's settings, typically matching `userId`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tags/{tagId}",
+        "definition": {
+          "entityName": "Tag",
+          "schema": {
+            "$ref": "#/backend/entities/Tag"
+          },
+          "description": "Stores user-defined tags for organizing notes. Each tag document includes a denormalized 'userId' field matching the parent `{userId}` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching `request.auth.uid`."
+            },
+            {
+              "name": "tagId",
+              "description": "The unique ID for the tag."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notes/{noteId}",
+        "definition": {
+          "entityName": "Note",
+          "schema": {
+            "$ref": "#/backend/entities/Note"
+          },
+          "description": "Stores rich media notes created by the user. Each note document includes a denormalized 'userId' field matching the parent `{userId}` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching `request.auth.uid`."
+            },
+            {
+              "name": "noteId",
+              "description": "The unique ID for the note."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notes/{noteId}/mediaContent/{mediaContentId}",
+        "definition": {
+          "entityName": "MediaContent",
+          "schema": {
+            "$ref": "#/backend/entities/MediaContent"
+          },
+          "description": "Stores individual media items embedded within a specific note. Each mediaContent document includes denormalized 'userId' (owner of the note) and 'noteId' fields for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching `request.auth.uid`."
+            },
+            {
+              "name": "noteId",
+              "description": "The unique ID of the parent note."
+            },
+            {
+              "name": "mediaContentId",
+              "description": "The unique ID for the media content item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure is designed with a strong emphasis on **Authorization Independence** and **Structural Segregation**, ensuring simple, robust, and easily debuggable security rules, in line with the core design principles. All user-specific data is nested under a `users/{userId}` path, providing clear path-based ownership.\n\n**Authorization Independence:**\n\n1.  **`users/{userId}`:** The `User` document's ID (`userId`) will directly correspond to `request.auth.uid`, making authorization trivial: `allow read, update: if request.auth.uid == userId; allow create: if request.auth.uid != null;`.\n2.  **`users/{userId}/settings/{settingsId}`:** The `UserSettings` document will have `userId` as its document ID (`settingsId`), which matches the parent `userId` in the path. This allows rules to simply check `request.auth.uid == userId` for all operations on a user's settings, eliminating `get()` calls.\n3.  **`users/{userId}/tags/{tagId}`:** Similar to `UserSettings`, each `Tag` document will contain a `userId` field that matches the `userId` in the path. Security rules can directly verify `request.auth.uid == resource.data.userId` without needing to fetch any parent document.\n4.  **`users/{userId}/notes/{noteId}`:** Each `Note` document will include a `userId` field that matches the `userId` in its path. This enables direct ownership checks: `allow read, write: if request.auth.uid == resource.data.userId;`. The `isLocked` field on `Note` is an application-level concern for UI/business logic and does not impact Firestore security rules, which simply ensure that only the owner can read/write their notes.\n5.  **`users/{userId}/notes/{noteId}/mediaContent/{mediaContentId}` (CRITICAL DENORMALIZATION):** To achieve Authorization Independence for `MediaContent`, each `mediaContent` document will explicitly store both `noteId` (already present in schema) AND the `userId` of the note's owner. This denormalization means that security rules for `mediaContent` can evaluate `request.auth.uid == resource.data.userId` directly, without performing an expensive and non-atomic `get(/users/$(userId)/notes/$(noteId))` operation. This is crucial for enabling atomic batch writes for creating a note and its initial media content.\n\n**QAPs (Rules are not Filters):**\n\nThe structure predominantly uses **Structural Segregation** to ensure Queryable Authorization Patterns (QAPs) for `list` operations:\n\n*   All user-specific data (UserSettings, Notes, Tags, MediaContent) is strictly siloed under the `/users/{userId}/...` path. This means any `list` query against `settings`, `notes`, `tags`, or `mediaContent` within a specific `userId` path implicitly filters by the authenticated user's ID (`request.auth.uid`).\n*   For example, a query `db.collection('users').doc(request.auth.uid).collection('notes').get()` will only return notes owned by the authenticated user, and the security rules will only grant access to these documents because `request.auth.uid == userId` is enforced at every level of the hierarchy. This eliminates the need for complex filter logic in rules.\n\nThis design leverages Firebase Authentication's `uid` as the primary key for user-related top-level collections, enforcing a strict owner-pays/owner-access model. All relationships are modeled via subcollections or explicit `Id` fields, with critical `userId` information denormalized down the hierarchy to maintain authorization independence and facilitate atomic operations."
+  }
+}

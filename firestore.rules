@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * MEDIAVAULT SECURITY RULES
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset enforces a strict user-ownership model using Structural Segregation. 
+     * All application data is siloed under unique user paths (/users/{userId}), ensuring 
+     * that users can only access and manage their own content.
+     *
+     * DATA STRUCTURE:
+     * - /users/{userId}: Core profile and account metadata.
+     * - /users/{userId}/settings: Personal app preferences (brightness, notifications).
+     * - /users/{userId}/tags: User-specific categories for note organization.
+     * - /users/{userId}/notes: Rich media notes belonging to the user.
+     * - /users/{userId}/notes/{noteId}/mediaContent: Individual media items within a note.
+     *
+     * KEY SECURITY DECISIONS:
+     * - Path-Based Authorization: The top-level {userId} in the path is compared directly 
+     *   against the Firebase Auth UID (request.auth.uid).
+     * - Denormalization for Performance: Critical relational fields like 'userId' and 
+     *   'noteId' are stored directly on child documents to allow for fast, single-document 
+     *   security checks without requiring additional database reads (get() calls).
+     * - Relational Integrity: On creation and update, rules enforce that internal 
+     *   ownership fields match the document's path and remain immutable.
+     * - Prototyping Flexibility: While authorization is strictly enforced, the specific 
+     *   schema of content fields (e.g., description, title) is not validated to allow 
+     *   for rapid front-end iteration.
+     */
+
+    // --- Global Helper Functions ---
+
+    /**
+     * @description Checks if the request is from a signed-in user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner and the document exists (for updates/deletes).
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for the User profile document.
+     * @path /users/{userId}
+     * @allow (create) if auth.uid == userId
+     * @deny (create) if auth.uid != userId
+     * @principle Validates that users can only create and manage their own profile.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Rules for user-specific application settings.
+       * @path /users/{userId}/settings/{settingsId}
+       * @allow (update) if auth.uid == userId
+       * @deny (update) if userId field is changed
+       * @principle Ensures settings are private and ownership is immutable.
+       */
+      match /settings/{settingsId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Rules for user-defined tags.
+       * @path /users/{userId}/tags/{tagId}
+       * @allow (list) if auth.uid == userId
+       * @deny (get) if auth.uid != userId
+       * @principle Path-based isolation for organizational metadata.
+       */
+      match /tags/{tagId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Rules for the primary Note collection.
+       * @path /users/{userId}/notes/{noteId}
+       * @allow (create) if auth.uid == userId
+       * @deny (write) if attempt to change ownership (userId)
+       * @principle Enforces strict ownership of rich media content.
+       */
+      match /notes/{noteId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Rules for media items nested within a note.
+         * @path /users/{userId}/notes/{noteId}/mediaContent/{mediaContentId}
+         * @allow (create) if auth.uid == userId and noteId matches path
+         * @deny (create) if noteId in data does not match the parent note in path
+         * @principle Validates relational integrity using denormalized path identifiers.
+         */
+        match /mediaContent/{mediaContentId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.noteId == noteId;
+          allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId && request.resource.data.noteId == resource.data.noteId;
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+    }
+  }
+}

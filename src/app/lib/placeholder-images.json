@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "landscape-1",
+      "description": "Beautiful mountain landscape",
+      "imageUrl": "https://picsum.photos/seed/101/800/600",
+      "imageHint": "mountain landscape"
+    },
+    {
+      "id": "notes-1",
+      "description": "Abstract note taking background",
+      "imageUrl": "https://picsum.photos/seed/102/800/600",
+      "imageHint": "abstract paper"
+    },
+    {
+      "id": "avatar-user",
+      "description": "User profile avatar",
+      "imageUrl": "https://picsum.photos/seed/103/100/100",
+      "imageHint": "person portrait"
+    }
+  ]
+}
