@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -20,7 +20,8 @@ import {
   Volume2, 
   Settings as SettingsIcon,
   Moon,
-  VolumeX
+  VolumeX,
+  Palette
 } from 'lucide-react';
 
 interface SettingsDialogProps {
@@ -32,6 +33,24 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   const [brightness, setBrightness] = useState(80);
   const [notificationInterval, setNotificationInterval] = useState(30);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Initial theme load
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
+  }, []);
+
+  const toggleTheme = (checked: boolean) => {
+    setIsDarkMode(checked);
+    if (checked) {
+      document.documentElement.classList.add('dark');
+      localStorage.theme = 'dark';
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.theme = 'light';
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -47,6 +66,24 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         </DialogHeader>
         
         <div className="py-6 space-y-8">
+          {/* Theme Section */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-2 text-sm font-semibold">
+                <Palette className="h-4 w-4" /> Appearance
+              </Label>
+              <p className="text-xs text-muted-foreground">{isDarkMode ? 'Dark Mode' : 'Light Mode'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Sun className="h-4 w-4 text-muted-foreground" />
+              <Switch 
+                checked={isDarkMode} 
+                onCheckedChange={toggleTheme} 
+              />
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+
           {/* Brightness Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">

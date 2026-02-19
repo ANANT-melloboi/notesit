@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -13,7 +14,8 @@ import {
   MoreVertical,
   CheckCircle2,
   Trash2,
-  Bot
+  Bot,
+  Play
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -54,7 +56,6 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
       setUnlockKey('');
     } else {
       setUnlockKey('');
-      // We could add a shake animation here for incorrect passkey
     }
   };
 
@@ -75,7 +76,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
           !isLocked && "hover:glow-primary"
         )}
       >
-        {/* Hover Selection Button */}
+        {/* Selection Dot */}
         <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
            <div className="bg-background rounded-full p-0.5 shadow-sm border glow-primary">
               <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
@@ -103,19 +104,18 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
                 <Lock className="h-8 w-8 text-accent/80" />
               </div>
               {isAttemptingUnlock ? (
-                <div className="flex flex-col gap-2 w-full max-w-[180px] mx-auto animate-in zoom-in-95 duration-200">
+                <div className="flex flex-col gap-2 w-full max-w-[180px] mx-auto animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                   <Input 
                     type="password" 
-                    placeholder="Enter Passkey" 
+                    placeholder="Passkey" 
                     autoFocus
                     value={unlockKey}
                     onChange={(e) => setUnlockKey(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleUnlock(e)}
-                    onClick={(e) => e.stopPropagation()}
                     className="text-center h-9 text-sm rounded-lg glow-primary focus-visible:ring-accent"
                   />
                   <div className="flex gap-1">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={(e) => { e.stopPropagation(); setIsAttemptingUnlock(false); }}>Cancel</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => setIsAttemptingUnlock(false)}>Cancel</Button>
                     <Button size="sm" className="flex-1 h-8 text-xs bg-accent text-accent-foreground glow-accent" onClick={(e) => handleUnlock(e as any)}>Unlock</Button>
                   </div>
                 </div>
@@ -148,11 +148,26 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
             </div>
           ) : (
             <div className="space-y-3">
-              {note.mediaType === 'image' && note.mediaUrl && (
+              {/* Image / Scribble Preview */}
+              {(note.mediaType === 'image' || note.mediaType === 'scribble') && note.mediaUrl && (
                 <div className="aspect-video relative rounded-md overflow-hidden bg-muted mb-2 border">
                   <img src={note.mediaUrl} alt={note.title} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" />
                 </div>
               )}
+              
+              {/* Voice Preview */}
+              {note.mediaType === 'voice' && note.mediaUrl && (
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/20 mb-2">
+                  <div className="bg-primary p-2 rounded-full">
+                    <Play className="h-3 w-3 text-primary-foreground fill-current" />
+                  </div>
+                  <div className="flex-1 h-1 bg-primary/20 rounded-full relative overflow-hidden">
+                    <div className="absolute inset-0 bg-primary w-1/3 rounded-full" />
+                  </div>
+                  <span className="text-[10px] font-mono text-primary font-bold">Voice Note</span>
+                </div>
+              )}
+
               <p className="text-sm text-foreground/80 line-clamp-6 leading-relaxed whitespace-pre-wrap">
                 {note.content}
               </p>
