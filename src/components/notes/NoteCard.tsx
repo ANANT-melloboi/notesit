@@ -17,7 +17,8 @@ import {
   Play,
   Cloud,
   Clock,
-  Video as VideoIcon
+  Video as VideoIcon,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   DropdownMenu, 

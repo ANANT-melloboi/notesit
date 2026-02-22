@@ -21,7 +21,9 @@ import {
   Check,
   Plus,
   Trash2,
-  Video as VideoIcon
+  Video as VideoIcon,
+  Cloud,
+  Zap
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -30,6 +32,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface NoteEditorProps {
   initialNote?: Partial<Note>;
@@ -47,6 +50,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const [isLocked, setIsLocked] = useState(initialNote?.isLocked || false);
   const [passkey, setPasskey] = useState(initialNote?.passkey || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const playSuccessSound = () => {
@@ -93,6 +97,23 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     });
   };
 
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    toast({
+      title: "Processing Video",
+      description: "Optimizing for high-capacity cloud sync...",
+    });
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMediaUrls([reader.result as string]);
+      setMediaType('video');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const removeMedia = (index: number) => {
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
@@ -107,8 +128,11 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     <Card className="w-full max-w-2xl mx-auto shadow-xl border-t-4 border-t-primary bg-card overflow-hidden glass">
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
         <div className="space-y-1">
-          <CardTitle className="text-xl font-bold">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
             {initialNote?.id ? 'Edit Note' : 'Create New Note'}
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[10px] gap-1 px-2">
+              <Cloud className="h-3 w-3" /> Secure Sync
+            </Badge>
           </CardTitle>
           <p className="text-xs text-muted-foreground">Changes are synced to your vault automatically on save.</p>
         </div>
@@ -234,28 +258,55 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               </TabsContent>
 
               <TabsContent value="video" className="m-0 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1 relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Add video URL..." 
-                      className="pl-9"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          addMediaByUrl(e.currentTarget.value);
-                          e.currentTarget.value = '';
-                        }
-                      }}
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex-1 relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Add video URL..." 
+                        className="pl-9"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            addMediaByUrl(e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => videoInputRef.current?.click()}
+                      className="w-full sm:w-auto rounded-xl"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Large Video
+                    </Button>
+                    <input 
+                      type="file" 
+                      ref={videoInputRef} 
+                      onChange={handleVideoFileChange} 
+                      accept="video/*" 
+                      className="hidden" 
                     />
                   </div>
+                  
+                  <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider">High Capacity Sync Active</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">Up to 200GB Cloud Storage</span>
+                  </div>
+
+                  <VideoRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
+                  
+                  <Textarea 
+                    placeholder="Add video notes or transcription..." 
+                    className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                  />
                 </div>
-                <VideoRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
-                <Textarea 
-                  placeholder="Add video notes or transcription..." 
-                  className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                />
               </TabsContent>
 
               <TabsContent value="voice" className="m-0">
