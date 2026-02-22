@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -102,21 +101,21 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   };
 
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     toast({
       title: "Processing Media",
-      description: "Optimizing for high-capacity cloud sync...",
+      description: "Optimizing videos for high-capacity cloud sync...",
     });
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setMediaUrls([reader.result as string]);
-      setMediaType('video');
-      setVideoMode('upload');
-    };
-    reader.readAsDataURL(file);
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMediaUrls(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const removeMedia = (index: number) => {
@@ -181,7 +180,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               </TabsTrigger>
               <TabsTrigger value="video" className="rounded-lg data-[state=active]:bg-background px-2">
                 <VideoIcon className="h-4 w-4" />
-                <span className="hidden lg:inline ml-2">Video</span>
+                <span className="hidden lg:inline ml-2">Videos</span>
               </TabsTrigger>
               <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-background px-2">
                 <Mic className="h-4 w-4" />
@@ -305,33 +304,38 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                           className="w-full sm:w-auto rounded-xl"
                         >
                           <Film className="h-4 w-4 mr-2" />
-                          Browse Device
+                          Browse
                         </Button>
                         <input 
                           type="file" 
                           ref={videoInputRef} 
                           onChange={handleVideoFileChange} 
                           accept="video/*" 
+                          multiple
                           className="hidden" 
                         />
                       </div>
-                      
-                      {mediaUrls.length > 0 && mediaType === 'video' && (
-                        <div className="relative aspect-video rounded-xl overflow-hidden bg-black border group animate-in fade-in zoom-in duration-300">
-                           <video key={mediaUrls[0]} src={mediaUrls[0]} controls className="w-full h-full object-contain" />
+                    </div>
+                  ) : (
+                    <VideoRecorder onSave={(url) => setMediaUrls(prev => [...prev, url])} />
+                  )}
+
+                  {mediaUrls.length > 0 && mediaType === 'video' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {mediaUrls.map((url, idx) => (
+                        <div key={idx} className="relative aspect-video rounded-xl overflow-hidden bg-black border group animate-in fade-in zoom-in duration-300">
+                           <video src={url} controls className="w-full h-full object-contain" />
                            <Button 
                             variant="destructive" 
                             size="icon" 
-                            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-                            onClick={() => removeMedia(0)}
+                            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full z-10"
+                            onClick={() => removeMedia(idx)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ) : (
-                    <VideoRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
                   )}
                   
                   <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
