@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -22,18 +21,24 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
   const chunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
-  // Sync with initialValue if it changes externally (e.g. from the parent)
   useEffect(() => {
     if (initialValue && initialValue !== recordedUrl) {
       setRecordedUrl(initialValue);
     }
-  }, [initialValue]);
+  }, [initialValue, recordedUrl]);
 
   useEffect(() => {
+    let activeStream: MediaStream | null = null;
+
     const getCameraPermission = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'user' }, 
+          audio: true 
+        });
+        activeStream = stream;
         setHasCameraPermission(true);
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -48,14 +53,19 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
       }
     };
 
+    // Only request and start camera if we don't already have a recording to show
     if (!recordedUrl) {
       getCameraPermission();
     }
 
+    // CRITICAL: Clean up the stream when the component unmounts or recordedUrl is set
+    // This ensures the camera light turns off immediately.
     return () => {
-      if (videoRef.current?.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
       }
     };
   }, [recordedUrl, toast]);
