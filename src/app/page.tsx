@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -6,6 +7,7 @@ import { NoteCard } from '@/components/notes/NoteCard';
 import { NoteEditor } from '@/components/notes/NoteEditor';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { AboutDialog } from '@/components/settings/AboutDialog';
+import { ReminderPrompt } from '@/components/notes/ReminderPrompt';
 import { SplashScreen } from '@/components/layout/SplashScreen';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +43,8 @@ export default function Home() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isReminderPromptOpen, setIsReminderPromptOpen] = useState(false);
+  const [lastSavedNoteId, setLastSavedNoteId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState<Partial<Note> | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('Notes');
@@ -60,7 +64,7 @@ export default function Home() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleSaveNote = (noteData: Partial<Note>) => {
+  const handleSaveNote = async (noteData: Partial<Note>) => {
     if (!firestore || !user) return;
 
     const notesRef = collection(firestore, 'users', user.uid, 'notes');
@@ -71,18 +75,35 @@ export default function Home() {
         ...noteData,
         updatedAt: new Date().toISOString()
       });
+      setIsEditorOpen(false);
+      setEditingNote(undefined);
     } else {
-      addDocumentNonBlocking(notesRef, {
+      const newDocRef = await addDocumentNonBlocking(notesRef, {
         ...noteData,
         userId: user.uid,
         category: activeCategory,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
+      
+      if (newDocRef) {
+        setLastSavedNoteId(newDocRef.id);
+        setIsReminderPromptOpen(true);
+      }
+      
+      setIsEditorOpen(false);
+      setEditingNote(undefined);
     }
-    
-    setIsEditorOpen(false);
-    setEditingNote(undefined);
+  };
+
+  const handleSetReminder = (minutes: number) => {
+    if (!firestore || !user || !lastSavedNoteId) return;
+    const noteRef = doc(firestore, 'users', user.uid, 'notes', lastSavedNoteId);
+    updateDocumentNonBlocking(noteRef, {
+      reminderMinutes: minutes,
+      updatedAt: new Date().toISOString()
+    });
+    setLastSavedNoteId(null);
   };
 
   const handleDeleteNote = (id: string) => {
@@ -274,6 +295,13 @@ export default function Home() {
 
         <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         <AboutDialog isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+        
+        <ReminderPrompt 
+          isOpen={isReminderPromptOpen} 
+          onClose={() => setIsReminderPromptOpen(false)}
+          onSetReminder={handleSetReminder}
+          onSkip={() => setLastSavedNoteId(null)}
+        />
       </div>
     </>
   );

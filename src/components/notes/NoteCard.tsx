@@ -17,7 +17,8 @@ import {
   Bot,
   Play,
   Cloud,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -80,8 +81,13 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
           "hover:border-primary/30"
         )}
       >
-        {/* Sync Status Overlay */}
-        <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Status Overlays */}
+        <div className="absolute top-3 right-3 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+           {note.reminderMinutes && (
+             <Badge variant="secondary" className="bg-primary/20 backdrop-blur-sm text-[10px] gap-1 border-none shadow-sm text-primary font-bold">
+                <Clock className="h-3 w-3" /> {note.reminderMinutes}m
+             </Badge>
+           )}
            <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-[10px] gap-1 border-none shadow-sm text-primary">
               <Cloud className="h-3 w-3" /> Saved
            </Badge>

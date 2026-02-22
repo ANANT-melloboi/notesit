@@ -11,6 +11,7 @@ export interface Note {
   category: string;
   isLocked: boolean;
   passkey?: string;
+  reminderMinutes?: number; // Added for the new timer feature
   createdAt: string;
   updatedAt: string;
 }
