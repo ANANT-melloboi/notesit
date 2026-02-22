@@ -29,25 +29,27 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
     }
   }, [initialValue, recordedUrl]);
 
-  // Handle Camera Lifecycle
+  // Handle Camera Lifecycle with strict hardware release
   useEffect(() => {
-    // If we already have a recording displayed, we don't need the camera active
-    if (recordedUrl) {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-      return;
-    }
+    let isMounted = true;
+    let localStream: MediaStream | null = null;
 
     async function startCamera() {
+      if (recordedUrl) return;
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: 'user' }, 
           audio: true 
         });
         
-        // Store in ref for reliable cleanup
+        // If component unmounted while waiting for promise, kill stream immediately
+        if (!isMounted) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        localStream = stream;
         streamRef.current = stream;
         
         if (videoRef.current) {
@@ -55,26 +57,44 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
         }
         setHasCameraPermission(true);
       } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions to record video notes.',
-        });
+        if (isMounted) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions to record video notes.',
+          });
+        }
       }
     }
 
     startCamera();
 
-    // CRITICAL: Cleanup function that forcefully stops all tracks
+    // FORCE hardware release on unmount or mode change
     return () => {
+      isMounted = false;
+      
+      // Stop the local reference obtained during init
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+
+      // Stop the shared ref just in case
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => {
           track.stop();
           track.enabled = false;
         });
         streamRef.current = null;
+      }
+
+      // Release video element binding
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [recordedUrl, toast]);
