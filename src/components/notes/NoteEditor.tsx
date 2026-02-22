@@ -24,7 +24,8 @@ import {
   Video as VideoIcon,
   Cloud,
   Zap,
-  Camera
+  Camera,
+  Film
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -105,7 +106,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     if (!file) return;
 
     toast({
-      title: "Processing Video",
+      title: "Processing Media",
       description: "Optimizing for high-capacity cloud sync...",
     });
 
@@ -207,7 +208,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                   <div className="flex-1 relative">
                     <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Add image URL..." 
+                      placeholder="Add image or GIF URL..." 
                       className="pl-9"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -229,7 +230,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     type="file" 
                     ref={fileInputRef} 
                     onChange={handleFileChange} 
-                    accept="image/*" 
+                    accept="image/*,image/gif" 
                     multiple
                     className="hidden" 
                   />
@@ -278,7 +279,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                       onClick={() => setVideoMode('upload')}
                       className="rounded-md h-8 gap-2"
                     >
-                      <Upload className="h-4 w-4" /> Upload
+                      <Upload className="h-4 w-4" /> Device File
                     </Button>
                   </div>
 
@@ -303,8 +304,8 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                           onClick={() => videoInputRef.current?.click()}
                           className="w-full sm:w-auto rounded-xl"
                         >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Device File
+                          <Film className="h-4 w-4 mr-2" />
+                          Browse Device
                         </Button>
                         <input 
                           type="file" 
@@ -316,8 +317,8 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                       </div>
                       
                       {mediaUrls.length > 0 && mediaType === 'video' && (
-                        <div className="relative aspect-video rounded-xl overflow-hidden bg-black border group">
-                           <video src={mediaUrls[0]} controls className="w-full h-full object-contain" />
+                        <div className="relative aspect-video rounded-xl overflow-hidden bg-black border group animate-in fade-in zoom-in duration-300">
+                           <video key={mediaUrls[0]} src={mediaUrls[0]} controls className="w-full h-full object-contain" />
                            <Button 
                             variant="destructive" 
                             size="icon" 
@@ -336,9 +337,9 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                   <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Zap className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-bold text-primary uppercase tracking-wider">High Capacity Sync Active</span>
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">Up to 200GB Cloud Storage</span>
+                    <span className="text-[10px] text-muted-foreground">Up to 200GB Optimized Cloud Storage</span>
                   </div>
                   
                   <Textarea 

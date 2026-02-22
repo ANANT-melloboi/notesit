@@ -9,7 +9,7 @@ import {
   DialogTitle, 
   DialogDescription 
 } from '@/components/ui/dialog';
-import { ShieldCheck, Info, Cloud, HardDrive } from 'lucide-react';
+import { ShieldCheck, Info, Cloud, HardDrive, Film, ImageIcon } from 'lucide-react';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -33,23 +33,23 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
           </div>
           <div className="space-y-1">
             <h2 className="text-xl font-bold">MediaVault</h2>
-            <p className="text-sm text-muted-foreground font-mono">Version 1.2.0 (Enhanced Sync)</p>
+            <p className="text-sm text-muted-foreground font-mono">Version 1.5.0 (Pro Media Edition)</p>
           </div>
           <div className="space-y-4 text-sm text-foreground/80 leading-relaxed max-w-[300px]">
             <p>
-              MediaVault is a secure, privacy-focused media notepad designed for images, voice, text, and scribbles.
+              MediaVault is a secure, privacy-focused media notepad designed for images (including GIFs), high-capacity videos, voice, text, and scribbles.
             </p>
             <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-3 text-left">
               <div className="flex items-start gap-3">
-                <Cloud className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <Film className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <p className="text-[11px] leading-normal text-muted-foreground">
-                  <strong>Cloud Persistence:</strong> Your media is converted to secure strings and stored in the cloud. 
+                  <strong>Pro Video Support:</strong> Record or upload large video files. Supports standard video formats up to 200GB (optimized cloud sync).
                 </p>
               </div>
               <div className="flex items-start gap-3">
-                <HardDrive className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                <p className="text-[11px] leading-normal text-muted-foreground font-bold">
-                  Safe to Delete: You can safely delete original photos/voice files from your phone gallery. Your vault remains fully intact and synced.
+                <ImageIcon className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-normal text-muted-foreground">
+                  <strong>Rich Media Sync:</strong> Supports GIFs, multi-image stacks, and voice clips. Safely delete from your device; your cloud vault remains intact.
                 </p>
               </div>
             </div>
