@@ -22,6 +22,13 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
   const chunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
+  // Sync with initialValue if it changes externally (e.g. from the parent)
+  useEffect(() => {
+    if (initialValue && initialValue !== recordedUrl) {
+      setRecordedUrl(initialValue);
+    }
+  }, [initialValue]);
+
   useEffect(() => {
     const getCameraPermission = async () => {
       try {
@@ -178,7 +185,7 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
           <div className="aspect-video bg-black rounded-xl overflow-hidden border shadow-2xl">
             <video 
               src={recordedUrl} 
-              className="w-full h-full object-cover" 
+              className="w-full h-full object-contain" 
               controls
             />
           </div>

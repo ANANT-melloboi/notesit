@@ -23,7 +23,8 @@ import {
   Trash2,
   Video as VideoIcon,
   Cloud,
-  Zap
+  Zap,
+  Camera
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -49,6 +50,8 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const [mediaUrls, setMediaUrls] = useState<string[]>(initialNote?.mediaUrls || []);
   const [isLocked, setIsLocked] = useState(initialNote?.isLocked || false);
   const [passkey, setPasskey] = useState(initialNote?.passkey || '');
+  const [videoMode, setVideoMode] = useState<'record' | 'upload'>('record');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -110,6 +113,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     reader.onloadend = () => {
       setMediaUrls([reader.result as string]);
       setMediaType('video');
+      setVideoMode('upload');
     };
     reader.readAsDataURL(file);
   };
@@ -231,7 +235,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                   />
                 </div>
 
-                {mediaUrls.length > 0 && (
+                {mediaUrls.length > 0 && mediaType === 'image' && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {mediaUrls.map((url, idx) => (
                       <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-muted border group">
@@ -259,36 +263,75 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
 
               <TabsContent value="video" className="m-0 space-y-4">
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="flex-1 relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Add video URL..." 
-                        className="pl-9"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            addMediaByUrl(e.currentTarget.value);
-                            e.currentTarget.value = '';
-                          }
-                        }}
-                      />
-                    </div>
+                  <div className="flex justify-center p-1 bg-muted rounded-lg w-fit mx-auto">
                     <Button 
-                      variant="outline" 
-                      onClick={() => videoInputRef.current?.click()}
-                      className="w-full sm:w-auto rounded-xl"
+                      variant={videoMode === 'record' ? 'secondary' : 'ghost'} 
+                      size="sm" 
+                      onClick={() => setVideoMode('record')}
+                      className="rounded-md h-8 gap-2"
                     >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Large Video
+                      <Camera className="h-4 w-4" /> Camera
                     </Button>
-                    <input 
-                      type="file" 
-                      ref={videoInputRef} 
-                      onChange={handleVideoFileChange} 
-                      accept="video/*" 
-                      className="hidden" 
-                    />
+                    <Button 
+                      variant={videoMode === 'upload' ? 'secondary' : 'ghost'} 
+                      size="sm" 
+                      onClick={() => setVideoMode('upload')}
+                      className="rounded-md h-8 gap-2"
+                    >
+                      <Upload className="h-4 w-4" /> Upload
+                    </Button>
                   </div>
+
+                  {videoMode === 'upload' ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex-1 relative">
+                          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Add video URL..." 
+                            className="pl-9"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                addMediaByUrl(e.currentTarget.value);
+                                e.currentTarget.value = '';
+                              }
+                            }}
+                          />
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => videoInputRef.current?.click()}
+                          className="w-full sm:w-auto rounded-xl"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Device File
+                        </Button>
+                        <input 
+                          type="file" 
+                          ref={videoInputRef} 
+                          onChange={handleVideoFileChange} 
+                          accept="video/*" 
+                          className="hidden" 
+                        />
+                      </div>
+                      
+                      {mediaUrls.length > 0 && mediaType === 'video' && (
+                        <div className="relative aspect-video rounded-xl overflow-hidden bg-black border group">
+                           <video src={mediaUrls[0]} controls className="w-full h-full object-contain" />
+                           <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                            onClick={() => removeMedia(0)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <VideoRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
+                  )}
                   
                   <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -297,8 +340,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     </div>
                     <span className="text-[10px] text-muted-foreground">Up to 200GB Cloud Storage</span>
                   </div>
-
-                  <VideoRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
                   
                   <Textarea 
                     placeholder="Add video notes or transcription..." 
