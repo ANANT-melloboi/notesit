@@ -16,8 +16,10 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
   const [recordedUrl, setRecordedUrl] = useState<string | null>(initialValue || null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [timer, setTimer] = useState(0);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
@@ -27,21 +29,31 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
     }
   }, [initialValue, recordedUrl]);
 
+  // Handle Camera Lifecycle
   useEffect(() => {
-    let activeStream: MediaStream | null = null;
+    // If we already have a recording displayed, we don't need the camera active
+    if (recordedUrl) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      return;
+    }
 
-    const getCameraPermission = async () => {
+    async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: 'user' }, 
           audio: true 
         });
-        activeStream = stream;
-        setHasCameraPermission(true);
+        
+        // Store in ref for reliable cleanup
+        streamRef.current = stream;
         
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+        setHasCameraPermission(true);
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -51,21 +63,18 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
           description: 'Please enable camera permissions to record video notes.',
         });
       }
-    };
-
-    // Only request and start camera if we don't already have a recording to show
-    if (!recordedUrl) {
-      getCameraPermission();
     }
 
-    // CRITICAL: Clean up the stream when the component unmounts or recordedUrl is set
-    // This ensures the camera light turns off immediately.
+    startCamera();
+
+    // CRITICAL: Cleanup function that forcefully stops all tracks
     return () => {
-      if (activeStream) {
-        activeStream.getTracks().forEach(track => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
           track.stop();
           track.enabled = false;
         });
+        streamRef.current = null;
       }
     };
   }, [recordedUrl, toast]);
@@ -83,10 +92,9 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
   }, [isRecording]);
 
   const startRecording = () => {
-    if (!videoRef.current?.srcObject) return;
+    if (!streamRef.current) return;
     
-    const stream = videoRef.current.srcObject as MediaStream;
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm' });
     mediaRecorderRef.current = mediaRecorder;
     chunksRef.current = [];
 
@@ -143,7 +151,7 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
               playsInline
             />
             {isRecording && (
-              <div className="absolute top-4 right-4 flex items-center gap-2 bg-destructive px-3 py-1 rounded-full animate-pulse">
+              <div className="absolute top-4 right-4 flex items-center gap-2 bg-destructive px-3 py-1 rounded-full animate-pulse z-10">
                 <div className="h-2 w-2 rounded-full bg-white" />
                 <span className="text-[10px] font-bold text-white uppercase">{formatTime(timer)}</span>
               </div>
@@ -171,14 +179,14 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
               <Button 
                 variant="destructive" 
                 size="lg" 
-                className="rounded-full h-16 w-16 glow-accent" 
+                className="rounded-full h-16 w-16 glow-accent shadow-xl" 
                 onClick={stopRecording}
               >
                 <Square className="h-6 w-6" />
               </Button>
             ) : (
               <Button 
-                className="rounded-full h-16 w-16 glow-primary bg-primary" 
+                className="rounded-full h-16 w-16 glow-primary bg-primary shadow-xl hover:scale-105 transition-transform" 
                 onClick={startRecording}
                 disabled={hasCameraPermission !== true}
               >
@@ -186,13 +194,13 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
               </Button>
             )}
           </div>
-          <p className="text-center text-xs text-muted-foreground font-medium">
+          <p className="text-center text-xs text-muted-foreground font-bold uppercase tracking-widest">
             {isRecording ? "Recording clip..." : "Tap to start recording"}
           </p>
         </div>
       ) : (
         <div className="w-full space-y-4">
-          <div className="aspect-video bg-black rounded-xl overflow-hidden border shadow-2xl">
+          <div className="aspect-video bg-black rounded-xl overflow-hidden border shadow-2xl relative">
             <video 
               src={recordedUrl} 
               className="w-full h-full object-contain" 
@@ -200,10 +208,10 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
             />
           </div>
           <div className="flex gap-2 justify-center">
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setRecordedUrl(null)}>
+            <Button variant="outline" size="sm" className="rounded-xl font-bold" onClick={() => setRecordedUrl(null)}>
               <Video className="h-4 w-4 mr-2" /> Re-record
             </Button>
-            <Button variant="ghost" size="sm" className="text-destructive rounded-xl" onClick={deleteRecording}>
+            <Button variant="ghost" size="sm" className="text-destructive rounded-xl font-bold hover:bg-destructive/10" onClick={deleteRecording}>
               <Trash2 className="h-4 w-4 mr-2" /> Delete
             </Button>
           </div>
