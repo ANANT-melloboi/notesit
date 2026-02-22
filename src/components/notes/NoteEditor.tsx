@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Note, MediaType } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +18,9 @@ import {
   Lock,
   Upload,
   Link as LinkIcon,
-  Check
+  Check,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -32,15 +35,26 @@ interface NoteEditorProps {
   onCancel: () => void;
 }
 
+const SUCCESS_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+
 export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const [title, setTitle] = useState(initialNote?.title || '');
   const [content, setContent] = useState(initialNote?.content || '');
   const [mediaType, setMediaType] = useState<MediaType>(initialNote?.mediaType || 'text');
-  const [mediaUrl, setMediaUrl] = useState(initialNote?.mediaUrl || '');
+  const [mediaUrls, setMediaUrls] = useState<string[]>(initialNote?.mediaUrls || []);
   const [isLocked, setIsLocked] = useState(initialNote?.isLocked || false);
   const [passkey, setPasskey] = useState(initialNote?.passkey || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const playSuccessSound = () => {
+    const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+    if (soundEnabled) {
+      const audio = new Audio(SUCCESS_SOUND_URL);
+      audio.volume = 0.4;
+      audio.play().catch(e => console.log("Audio playback failed", e));
+    }
+  };
 
   const handleSave = () => {
     if (isLocked && !passkey) {
@@ -52,39 +66,44 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
       return;
     }
 
+    playSuccessSound();
     onSave({
       ...initialNote,
       title: title || 'Untitled Note',
       content,
       mediaType,
-      mediaUrl,
+      mediaUrls,
       isLocked,
       passkey,
     });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Please select an image file.",
-      });
-      return;
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMediaUrls(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addMediaByUrl = (url: string) => {
+    if (url.trim()) {
+      setMediaUrls(prev => [...prev, url]);
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setMediaUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-xl border-t-4 border-t-primary bg-card overflow-hidden">
+    <Card className="w-full max-w-2xl mx-auto shadow-xl border-t-4 border-t-primary bg-card overflow-hidden glass">
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
         <div className="space-y-1">
           <CardTitle className="text-xl font-bold">
@@ -121,26 +140,26 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         <div className="space-y-2">
           <Label className="text-sm font-semibold">Media Content</Label>
           <Tabs value={mediaType} onValueChange={(val) => setMediaType(val as MediaType)} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-secondary/50">
-              <TabsTrigger value="text" className="data-[state=active]:bg-background">
+            <TabsList className="grid w-full grid-cols-4 bg-secondary/50 p-1 rounded-xl">
+              <TabsTrigger value="text" className="rounded-lg data-[state=active]:bg-background">
                 <Type className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Text</span>
               </TabsTrigger>
-              <TabsTrigger value="image" className="data-[state=active]:bg-background">
+              <TabsTrigger value="image" className="rounded-lg data-[state=active]:bg-background">
                 <ImageIcon className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Image</span>
+                <span className="hidden md:inline">Images</span>
               </TabsTrigger>
-              <TabsTrigger value="voice" className="data-[state=active]:bg-background">
+              <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-background">
                 <Mic className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Voice</span>
               </TabsTrigger>
-              <TabsTrigger value="scribble" className="data-[state=active]:bg-background">
+              <TabsTrigger value="scribble" className="rounded-lg data-[state=active]:bg-background">
                 <PenTool className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Scribble</span>
               </TabsTrigger>
             </TabsList>
 
-            <div className="mt-4 border rounded-md p-4 min-h-[200px] bg-secondary/10">
+            <div className="mt-4 border rounded-2xl p-4 min-h-[200px] bg-secondary/5">
               <TabsContent value="text" className="m-0">
                 <Textarea 
                   placeholder="Start typing your note here..." 
@@ -150,66 +169,71 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                 />
               </TabsContent>
               
-              <TabsContent value="image" className="m-0">
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="flex-1 relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Paste image URL..." 
-                        value={mediaUrl.startsWith('data:') ? '' : mediaUrl}
-                        onChange={(e) => setMediaUrl(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground font-medium px-2">OR</span>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full sm:w-auto"
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload
-                      </Button>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        accept="image/*" 
-                        className="hidden" 
-                      />
-                    </div>
+              <TabsContent value="image" className="m-0 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1 relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Add image URL..." 
+                      className="pl-9"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          addMediaByUrl(e.currentTarget.value);
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
                   </div>
-
-                  {mediaUrl && (
-                    <div className="relative aspect-video rounded-md overflow-hidden bg-muted border group">
-                      <img src={mediaUrl} alt="Preview" className="object-cover w-full h-full" />
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => setMediaUrl('')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                  <Textarea 
-                    placeholder="Add a caption..." 
-                    className="min-h-[60px] resize-none bg-transparent"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full sm:w-auto rounded-xl"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept="image/*" 
+                    multiple
+                    className="hidden" 
                   />
                 </div>
+
+                {mediaUrls.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {mediaUrls.map((url, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-muted border group">
+                        <img src={url} alt={`Preview ${idx}`} className="object-cover w-full h-full" />
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                          onClick={() => removeMedia(idx)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <Textarea 
+                  placeholder="Add a caption..." 
+                  className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                />
               </TabsContent>
 
               <TabsContent value="voice" className="m-0">
                 <div className="space-y-4">
-                  <VoiceRecorder onSave={setMediaUrl} initialValue={mediaUrl} />
+                  <VoiceRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
                   <Textarea 
                     placeholder="Transcription or additional details..." 
-                    className="min-h-[60px] resize-none bg-transparent"
+                    className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                   />
@@ -218,10 +242,10 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
 
               <TabsContent value="scribble" className="m-0">
                 <div className="space-y-4">
-                  <ScribbleCanvas onSave={setMediaUrl} initialValue={mediaUrl} />
+                  <ScribbleCanvas onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
                   <Textarea 
                     placeholder="Note details..." 
-                    className="min-h-[60px] resize-none bg-transparent"
+                    className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                   />
@@ -231,10 +255,10 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
           </Tabs>
         </div>
 
-        <div className="flex flex-col gap-4 p-4 rounded-lg bg-accent/5 border border-accent/20 transition-all hover:bg-accent/10">
+        <div className="flex flex-col gap-4 p-4 rounded-2xl bg-accent/5 border border-accent/20 transition-all hover:bg-accent/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={cn("p-2 rounded-lg transition-all", isLocked ? "bg-accent/20 glow-accent" : "bg-muted")}>
+              <div className={cn("p-2 rounded-xl transition-all", isLocked ? "bg-accent/20 glow-accent" : "bg-muted")}>
                 <Lock className={cn("h-4 w-4 transition-colors", isLocked ? "text-accent" : "text-muted-foreground")} />
               </div>
               <div className="space-y-0.5">
@@ -258,19 +282,19 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                 placeholder="Enter a secret code" 
                 value={passkey} 
                 onChange={(e) => setPasskey(e.target.value)}
-                className="bg-background focus-visible:glow-accent border-accent/20"
+                className="bg-background focus-visible:glow-accent border-accent/20 rounded-xl"
               />
             </div>
           )}
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium">
+          <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium rounded-xl">
             Discard
           </Button>
           <Button 
             onClick={handleSave} 
-            className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[120px]"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[120px] rounded-xl"
           >
             <Save className="h-4 w-4 mr-2" /> Save Note
           </Button>

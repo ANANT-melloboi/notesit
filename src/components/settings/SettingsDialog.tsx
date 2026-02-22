@@ -39,6 +39,10 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     // Initial theme load
     const isDark = document.documentElement.classList.contains('dark');
     setIsDarkMode(isDark);
+    
+    // Sound setting load
+    const sound = localStorage.getItem('soundEnabled') !== 'false';
+    setSoundEnabled(sound);
   }, []);
 
   const toggleTheme = (checked: boolean) => {
@@ -52,12 +56,17 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     }
   };
 
+  const toggleSound = (checked: boolean) => {
+    setSoundEnabled(checked);
+    localStorage.setItem('soundEnabled', checked.toString());
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] rounded-3xl glass border-none shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+            <SettingsIcon className="h-5 w-5 text-primary" />
             App Settings
           </DialogTitle>
           <DialogDescription>
@@ -67,10 +76,10 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         
         <div className="py-6 space-y-8">
           {/* Theme Section */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
             <div className="space-y-0.5">
               <Label className="flex items-center gap-2 text-sm font-semibold">
-                <Palette className="h-4 w-4" /> Appearance
+                <Palette className="h-4 w-4 text-primary" /> Appearance
               </Label>
               <p className="text-xs text-muted-foreground">{isDarkMode ? 'Dark Mode' : 'Light Mode'}</p>
             </div>
@@ -79,16 +88,17 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
               <Switch 
                 checked={isDarkMode} 
                 onCheckedChange={toggleTheme} 
+                className="data-[state=checked]:bg-primary"
               />
               <Moon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
 
           {/* Brightness Section */}
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2 text-sm font-semibold">
-                <Sun className="h-4 w-4" /> Brightness
+                <Sun className="h-4 w-4 text-primary" /> Brightness
               </Label>
               <span className="text-xs text-muted-foreground font-mono">{brightness}%</span>
             </div>
@@ -106,10 +116,10 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           </div>
 
           {/* Notification Interval */}
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2 text-sm font-semibold">
-                <Bell className="h-4 w-4" /> Notification Interval
+                <Bell className="h-4 w-4 text-primary" /> Notification Interval
               </Label>
               <span className="text-xs text-muted-foreground font-mono">{notificationInterval} min</span>
             </div>
@@ -124,23 +134,24 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           </div>
 
           {/* Sound Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
             <div className="space-y-0.5">
               <Label className="flex items-center gap-2 text-sm font-semibold">
                 {soundEnabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
-                Notification Sound
+                Notification Sounds
               </Label>
-              <p className="text-xs text-muted-foreground">Play sound for new alerts</p>
+              <p className="text-xs text-muted-foreground">Play success sound on save</p>
             </div>
             <Switch 
               checked={soundEnabled} 
-              onCheckedChange={setSoundEnabled} 
+              onCheckedChange={toggleSound} 
+              className="data-[state=checked]:bg-primary"
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button onClick={onClose} className="w-full sm:w-auto">Save Changes</Button>
+          <Button onClick={onClose} className="w-full sm:w-auto rounded-xl glow-primary font-bold">Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -15,7 +16,8 @@ import {
   Trash2,
   Bot,
   Play,
-  Cloud
+  Cloud,
+  ChevronRight
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -66,6 +68,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   };
 
   const isLocked = note.isLocked && !isTemporarilyUnlocked;
+  const mediaCount = note.mediaUrls?.length || 0;
 
   return (
     <>
@@ -89,7 +92,14 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
              <div className="flex items-center justify-between">
                 <h3 className="font-bold text-lg leading-tight line-clamp-2 tracking-tight">{note.title}</h3>
                 {!isLocked && getMediaIcon() && (
-                  <span className="text-primary ml-2 bg-primary/10 p-1.5 rounded-lg">{getMediaIcon()}</span>
+                  <div className="flex items-center gap-1.5">
+                    {mediaCount > 1 && (
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                        {mediaCount}
+                      </span>
+                    )}
+                    <span className="text-primary ml-1 bg-primary/10 p-1.5 rounded-lg">{getMediaIcon()}</span>
+                  </div>
                 )}
                 {note.isLocked && isTemporarilyUnlocked && (
                   <Unlock className="h-5 w-5 text-accent animate-in fade-in zoom-in duration-500" />
@@ -149,16 +159,32 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Image / Scribble Preview */}
-              {(note.mediaType === 'image' || note.mediaType === 'scribble') && note.mediaUrl && (
-                <div className="aspect-video relative rounded-xl overflow-hidden bg-muted mb-2 border-2 border-muted group-hover:border-primary/20 transition-colors shadow-inner">
-                  <img src={note.mediaUrl} alt={note.title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" />
+              {/* Image Gallery Preview */}
+              {(note.mediaType === 'image' || note.mediaType === 'scribble') && note.mediaUrls && note.mediaUrls.length > 0 && (
+                <div className={cn(
+                  "grid gap-1.5 rounded-2xl overflow-hidden bg-muted border-2 border-muted group-hover:border-primary/20 transition-all shadow-inner",
+                  note.mediaUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                )}>
+                  {note.mediaUrls.slice(0, 4).map((url, idx) => (
+                    <div key={idx} className={cn(
+                      "relative overflow-hidden aspect-video bg-background",
+                      note.mediaUrls!.length > 1 && idx === 0 && "col-span-1",
+                      note.mediaUrls!.length === 3 && idx === 0 && "col-span-2"
+                    )}>
+                      <img src={url} alt={note.title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" />
+                      {idx === 3 && note.mediaUrls!.length > 4 && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-sm">
+                          +{note.mediaUrls!.length - 4}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
               
               {/* Voice Preview */}
-              {note.mediaType === 'voice' && note.mediaUrl && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-transparent border border-primary/10 mb-2">
+              {note.mediaType === 'voice' && note.mediaUrls && note.mediaUrls[0] && (
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-primary/10 to-transparent border border-primary/10 mb-2">
                   <div className="bg-primary p-2.5 rounded-full shadow-lg glow-primary">
                     <Play className="h-3.5 w-3.5 text-primary-foreground fill-current" />
                   </div>
@@ -169,7 +195,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
                 </div>
               )}
 
-              <p className="text-sm text-foreground/70 line-clamp-5 leading-relaxed whitespace-pre-wrap font-medium">
+              <p className="text-sm text-foreground/70 line-clamp-4 leading-relaxed whitespace-pre-wrap font-medium">
                 {note.content}
               </p>
             </div>

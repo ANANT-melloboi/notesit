@@ -7,7 +7,7 @@ export interface Note {
   title: string;
   content: string;
   mediaType: MediaType;
-  mediaUrl?: string;
+  mediaUrls?: string[]; // Updated to support multiple URLs
   category: string;
   isLocked: boolean;
   passkey?: string;
