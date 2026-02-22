@@ -210,9 +210,10 @@ export default function Home() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden md:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary/60 bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
-                <Cloud className="h-3.5 w-3.5" />
-                Synced
+              {/* Added a more prominent Cloud Status Flair */}
+              <div className="hidden md:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 animate-in fade-in zoom-in duration-1000">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                Vault Synced
               </div>
               <Button 
                 variant="ghost" 
@@ -269,7 +270,7 @@ export default function Home() {
                   <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground/50">
                      <Lightbulb className="h-24 w-24 mb-4 stroke-1 animate-pulse" />
                      <p className="text-lg font-medium">Notes you add appear here</p>
-                     <p className="text-xs mt-1">Synced across all your devices</p>
+                     <p className="text-xs mt-1 text-primary">Securely synced with your account</p>
                   </div>
                 )}
               </div>
