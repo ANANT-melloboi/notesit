@@ -12,13 +12,12 @@ import {
   Mic, 
   PenTool, 
   MoreVertical,
-  CheckCircle2,
   Trash2,
   Bot,
   Play,
   Cloud,
-  ChevronRight,
-  Clock
+  Clock,
+  Video as VideoIcon
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -46,6 +45,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   const getMediaIcon = () => {
     switch (note.mediaType) {
       case 'image': return <ImageIconLucide className="h-4 w-4" />;
+      case 'video': return <VideoIcon className="h-4 w-4" />;
       case 'voice': return <Mic className="h-4 w-4" />;
       case 'scribble': return <PenTool className="h-4 w-4" />;
       default: return null;
@@ -165,8 +165,8 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Image Gallery Preview */}
-              {(note.mediaType === 'image' || note.mediaType === 'scribble') && note.mediaUrls && note.mediaUrls.length > 0 && (
+              {/* Image/Video Preview */}
+              {(note.mediaType === 'image' || note.mediaType === 'video' || note.mediaType === 'scribble') && note.mediaUrls && note.mediaUrls.length > 0 && (
                 <div className={cn(
                   "grid gap-1.5 rounded-2xl overflow-hidden bg-muted border-2 border-muted group-hover:border-primary/20 transition-all shadow-inner",
                   note.mediaUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"
@@ -177,7 +177,18 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
                       note.mediaUrls!.length > 1 && idx === 0 && "col-span-1",
                       note.mediaUrls!.length === 3 && idx === 0 && "col-span-2"
                     )}>
-                      <img src={url} alt={note.title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" />
+                      {note.mediaType === 'video' ? (
+                        <div className="relative w-full h-full bg-black flex items-center justify-center">
+                          <video src={url} className="object-cover w-full h-full opacity-60" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="bg-white/20 backdrop-blur-md p-3 rounded-full glow-primary">
+                              <Play className="h-6 w-6 text-white fill-white" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={url} alt={note.title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" />
+                      )}
                       {idx === 3 && note.mediaUrls!.length > 4 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-sm">
                           +{note.mediaUrls!.length - 4}

@@ -31,7 +31,8 @@ import {
   LogOut,
   Info,
   Loader2,
-  Cloud
+  Cloud,
+  Video as VideoIcon
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { signOut } from 'firebase/auth';
@@ -210,7 +211,6 @@ export default function Home() {
               />
             </div>
             <div className="flex items-center gap-3">
-              {/* Added a more prominent Cloud Status Flair */}
               <div className="hidden md:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 animate-in fade-in zoom-in duration-1000">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 Vault Synced
@@ -246,6 +246,7 @@ export default function Home() {
                 <p className="flex-1 text-muted-foreground font-medium pl-2">Take a note...</p>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="text-muted-foreground group-hover:text-primary"><ImageIcon className="h-5 w-5" /></Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground group-hover:text-primary"><VideoIcon className="h-5 w-5" /></Button>
                   <Button variant="ghost" size="icon" className="text-muted-foreground group-hover:text-primary"><PenTool className="h-5 w-5" /></Button>
                   <Button variant="ghost" size="icon" className="text-muted-foreground group-hover:text-primary"><Mic className="h-5 w-5" /></Button>
                 </div>

@@ -1,5 +1,5 @@
 
-export type MediaType = 'text' | 'image' | 'voice' | 'scribble';
+export type MediaType = 'text' | 'image' | 'voice' | 'scribble' | 'video';
 
 export interface Note {
   id: string;

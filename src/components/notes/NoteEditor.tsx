@@ -20,10 +20,12 @@ import {
   Link as LinkIcon,
   Check,
   Plus,
-  Trash2
+  Trash2,
+  Video as VideoIcon
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
+import { VideoRecorder } from './VideoRecorder';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
@@ -83,7 +85,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onloadend = () => {
         setMediaUrls(prev => [...prev, reader.result as string]);
@@ -140,22 +141,26 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         <div className="space-y-2">
           <Label className="text-sm font-semibold">Media Content</Label>
           <Tabs value={mediaType} onValueChange={(val) => setMediaType(val as MediaType)} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-secondary/50 p-1 rounded-xl">
-              <TabsTrigger value="text" className="rounded-lg data-[state=active]:bg-background">
-                <Type className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Text</span>
+            <TabsList className="grid w-full grid-cols-5 bg-secondary/50 p-1 rounded-xl">
+              <TabsTrigger value="text" className="rounded-lg data-[state=active]:bg-background px-2">
+                <Type className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Text</span>
               </TabsTrigger>
-              <TabsTrigger value="image" className="rounded-lg data-[state=active]:bg-background">
-                <ImageIcon className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Images</span>
+              <TabsTrigger value="image" className="rounded-lg data-[state=active]:bg-background px-2">
+                <ImageIcon className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Images</span>
               </TabsTrigger>
-              <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-background">
-                <Mic className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Voice</span>
+              <TabsTrigger value="video" className="rounded-lg data-[state=active]:bg-background px-2">
+                <VideoIcon className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Video</span>
               </TabsTrigger>
-              <TabsTrigger value="scribble" className="rounded-lg data-[state=active]:bg-background">
-                <PenTool className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Scribble</span>
+              <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-background px-2">
+                <Mic className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Voice</span>
+              </TabsTrigger>
+              <TabsTrigger value="scribble" className="rounded-lg data-[state=active]:bg-background px-2">
+                <PenTool className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Draw</span>
               </TabsTrigger>
             </TabsList>
 
@@ -222,6 +227,31 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                 
                 <Textarea 
                   placeholder="Add a caption..." 
+                  className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                />
+              </TabsContent>
+
+              <TabsContent value="video" className="m-0 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1 relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Add video URL..." 
+                      className="pl-9"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          addMediaByUrl(e.currentTarget.value);
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+                <VideoRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
+                <Textarea 
+                  placeholder="Add video notes or transcription..." 
                   className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
