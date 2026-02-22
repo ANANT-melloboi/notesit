@@ -292,7 +292,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        <h1>HELLO TEST VERSION 123</h1>
+
 
         <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         <AboutDialog isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
