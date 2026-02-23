@@ -30,14 +30,14 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
     }
   }, [initialValue, recordedUrl]);
 
-  // Handle Camera Lifecycle with strict hardware release
+  // Handle Camera Lifecycle with extremely aggressive hardware release
   useEffect(() => {
     let isMounted = true;
     let localStream: MediaStream | null = null;
 
     async function startCamera() {
-      // Don't restart if already recorded or if stream exists
-      if (recordedUrl || streamRef.current) return;
+      // Don't start if already recorded
+      if (recordedUrl) return;
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -76,26 +76,23 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
 
     startCamera();
 
-    // FORCE hardware release on unmount or mode change
+    // FORCE hardware release on unmount or state change
     return () => {
       isMounted = false;
       
-      // Stop the local reference obtained during init
-      if (localStream) {
-        localStream.getTracks().forEach(track => {
+      const stopTracks = (s: MediaStream | null) => {
+        if (!s) return;
+        s.getTracks().forEach(track => {
           track.stop();
           track.enabled = false;
         });
-      }
+      };
 
-      // Stop the shared ref just in case
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => {
-          track.stop();
-          track.enabled = false;
-        });
-        streamRef.current = null;
-      }
+      // Stop everything
+      stopTracks(localStream);
+      stopTracks(streamRef.current);
+      
+      if (streamRef.current) streamRef.current = null;
 
       // Release video element binding and force reset
       if (videoRef.current) {
@@ -120,30 +117,38 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
   const startRecording = () => {
     if (!streamRef.current) return;
     
-    const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm' });
-    mediaRecorderRef.current = mediaRecorder;
-    chunksRef.current = [];
+    try {
+      const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
 
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-        setRecordedUrl(base64data);
-        onSave(base64data);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
-    };
 
-    mediaRecorder.start();
-    setIsRecording(true);
-    setTimer(0);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          setRecordedUrl(base64data);
+          onSave(base64data);
+        };
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setTimer(0);
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Recording Error',
+        description: 'Failed to start recording. Please try again.',
+      });
+    }
   };
 
   const stopRecording = () => {

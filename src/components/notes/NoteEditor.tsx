@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Note, MediaType } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,8 +18,6 @@ import {
   Lock,
   Upload,
   Link as LinkIcon,
-  Check,
-  Plus,
   Trash2,
   Video as VideoIcon,
   Cloud,
@@ -131,7 +129,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-2xl border-t-4 border-t-primary bg-card overflow-hidden glass flex flex-col max-h-[90vh]">
+    <Card className="w-full max-w-2xl mx-auto shadow-2xl border-t-4 border-t-primary bg-card glass flex flex-col h-[90vh] md:h-auto md:max-h-[90vh] overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b shrink-0">
         <div className="space-y-1">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -143,14 +141,14 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
           <p className="text-xs text-muted-foreground">Changes are synced to your vault automatically on save.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onCancel}>
+          <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full">
             <X className="h-5 w-5" />
           </Button>
         </div>
       </CardHeader>
       
       <ScrollArea className="flex-1">
-        <CardContent className="space-y-6 pt-6 pb-20">
+        <CardContent className="space-y-6 pt-6 pb-6">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
             <Input 
@@ -413,13 +411,13 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         </CardContent>
       </ScrollArea>
 
-      <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card shrink-0">
-        <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium rounded-xl">
+      <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card shrink-0 mt-auto">
+        <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium rounded-xl h-12 px-6">
           Discard
         </Button>
         <Button 
           onClick={handleSave} 
-          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[120px] rounded-xl"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[140px] rounded-xl h-12 px-6"
         >
           <Save className="h-4 w-4 mr-2" /> Save Note
         </Button>
