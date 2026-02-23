@@ -23,7 +23,8 @@ import {
   Cloud,
   Zap,
   Camera,
-  Film
+  Film,
+  AlertTriangle
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -42,6 +43,7 @@ interface NoteEditorProps {
 }
 
 const SUCCESS_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+const MAX_DOC_SIZE_BYTES = 800000; // ~800KB safety limit for Firestore (1MB limit)
 
 export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const [title, setTitle] = useState(initialNote?.title || '');
@@ -55,6 +57,12 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const calculateTotalSize = () => {
+    const mediaSize = mediaUrls.reduce((acc, url) => acc + url.length, 0);
+    const textSize = title.length + content.length + passkey.length;
+    return mediaSize + textSize;
+  };
 
   const playSuccessSound = () => {
     const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
@@ -71,6 +79,16 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         variant: "destructive",
         title: "Passkey required",
         description: "Please set a passkey to lock this note.",
+      });
+      return;
+    }
+
+    const totalSize = calculateTotalSize();
+    if (totalSize > MAX_DOC_SIZE_BYTES) {
+      toast({
+        variant: "destructive",
+        title: "Note Too Large",
+        description: "Your media exceeds the high-capacity vault limit for a single note. Please reduce the number of videos or images.",
       });
       return;
     }
@@ -110,6 +128,14 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     });
 
     Array.from(files).forEach(file => {
+      if (file.size > MAX_DOC_SIZE_BYTES * 0.8) {
+        toast({
+          variant: "destructive",
+          title: "File Too Large",
+          description: `${file.name} exceeds the optimization limit. Try a shorter clip.`,
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setMediaUrls(prev => [...prev, reader.result as string]);
@@ -410,6 +436,15 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               </div>
             )}
           </div>
+
+          {calculateTotalSize() > MAX_DOC_SIZE_BYTES * 0.7 && (
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+              <p className="text-[10px] font-medium text-destructive leading-tight">
+                Warning: This note is approaching the cloud storage limit for single-note sync. Consider splitting media across multiple notes.
+              </p>
+            </div>
+          )}
         </CardContent>
       </ScrollArea>
 
