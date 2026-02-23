@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -35,7 +36,8 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
     let localStream: MediaStream | null = null;
 
     async function startCamera() {
-      if (recordedUrl) return;
+      // Don't restart if already recorded or if stream exists
+      if (recordedUrl || streamRef.current) return;
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -45,7 +47,10 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
         
         // If component unmounted while waiting for promise, kill stream immediately
         if (!isMounted) {
-          stream.getTracks().forEach(track => track.stop());
+          stream.getTracks().forEach(track => {
+            track.stop();
+            track.enabled = false;
+          });
           return;
         }
 
@@ -92,9 +97,10 @@ export function VideoRecorder({ onSave, initialValue }: VideoRecorderProps) {
         streamRef.current = null;
       }
 
-      // Release video element binding
+      // Release video element binding and force reset
       if (videoRef.current) {
         videoRef.current.srcObject = null;
+        videoRef.current.load();
       }
     };
   }, [recordedUrl, toast]);
