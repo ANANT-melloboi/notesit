@@ -30,7 +30,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
-  const [brightness, setBrightness] = useState(80);
+  const [brightness, setBrightness] = useState(100);
   const [notificationInterval, setNotificationInterval] = useState(30);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -43,7 +43,28 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     // Sound setting load
     const sound = localStorage.getItem('soundEnabled') !== 'false';
     setSoundEnabled(sound);
+
+    // Brightness load
+    const savedBrightness = localStorage.getItem('appBrightness');
+    if (savedBrightness) {
+      const b = parseInt(savedBrightness);
+      setBrightness(b);
+      applyBrightness(b);
+    }
   }, []);
+
+  const applyBrightness = (value: number) => {
+    // We apply brightness as a filter on the html element
+    // 100% is normal, lower is darker
+    const filterValue = value / 100;
+    document.documentElement.style.filter = `brightness(${filterValue})`;
+    localStorage.setItem('appBrightness', value.toString());
+  };
+
+  const handleBrightnessChange = (val: number[]) => {
+    setBrightness(val[0]);
+    applyBrightness(val[0]);
+  };
 
   const toggleTheme = (checked: boolean) => {
     setIsDarkMode(checked);
@@ -98,7 +119,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           <div className="space-y-4 px-1">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2 text-sm font-semibold">
-                <Sun className="h-4 w-4 text-primary" /> Brightness
+                <Sun className="h-4 w-4 text-primary" /> Display Brightness
               </Label>
               <span className="text-xs text-muted-foreground font-mono">{brightness}%</span>
             </div>
@@ -106,13 +127,15 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
               <Moon className="h-4 w-4 text-muted-foreground" />
               <Slider 
                 value={[brightness]} 
-                onValueChange={(val) => setBrightness(val[0])} 
+                onValueChange={handleBrightnessChange} 
                 max={100} 
+                min={20}
                 step={1} 
                 className="flex-1"
               />
               <Sun className="h-4 w-4 text-muted-foreground" />
             </div>
+            <p className="text-[10px] text-muted-foreground italic">Dims the entire interface for comfortable night viewing.</p>
           </div>
 
           {/* Notification Interval */}
@@ -151,7 +174,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         </div>
 
         <DialogFooter>
-          <Button onClick={onClose} className="w-full sm:w-auto rounded-xl glow-primary font-bold">Save Changes</Button>
+          <Button onClick={onClose} className="w-full sm:w-auto rounded-xl glow-primary font-bold">Close Settings</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

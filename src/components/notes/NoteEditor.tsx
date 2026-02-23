@@ -129,8 +129,9 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-2xl border-t-4 border-t-primary bg-card glass flex flex-col h-[90vh] md:h-auto md:max-h-[90vh] overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b shrink-0">
+    <Card className="w-full max-w-2xl mx-auto shadow-2xl border-t-4 border-t-primary bg-card glass flex flex-col h-[90vh] md:h-[85vh] overflow-hidden">
+      {/* Pinned Header */}
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b shrink-0 bg-card/50 backdrop-blur-md z-10">
         <div className="space-y-1">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             {initialNote?.id ? 'Edit Note' : 'Create New Note'}
@@ -138,17 +139,18 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               <Cloud className="h-3 w-3" /> Secure Sync
             </Badge>
           </CardTitle>
-          <p className="text-xs text-muted-foreground">Changes are synced to your vault automatically on save.</p>
+          <p className="text-xs text-muted-foreground hidden sm:block">Changes are synced to your vault automatically on save.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full h-8 w-8">
             <X className="h-5 w-5" />
           </Button>
         </div>
       </CardHeader>
       
+      {/* Scrollable Content */}
       <ScrollArea className="flex-1">
-        <CardContent className="space-y-6 pt-6 pb-6">
+        <CardContent className="space-y-6 pt-6 pb-24">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
             <Input 
@@ -156,37 +158,37 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               placeholder="What's this note about?" 
               value={title} 
               onChange={(e) => setTitle(e.target.value)}
-              className="text-lg font-medium border-none bg-muted/30 focus-visible:glow-primary transition-all"
+              className="text-lg font-medium border-none bg-muted/30 focus-visible:glow-primary transition-all h-12"
             />
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Media Content</Label>
             <Tabs value={mediaType} onValueChange={(val) => setMediaType(val as MediaType)} className="w-full">
-              <TabsList className="grid w-full grid-cols-5 bg-secondary/50 p-1 rounded-xl">
-                <TabsTrigger value="text" className="rounded-lg data-[state=active]:bg-background px-2">
+              <TabsList className="grid w-full grid-cols-5 bg-secondary/50 p-1 rounded-xl h-11">
+                <TabsTrigger value="text" className="rounded-lg data-[state=active]:bg-background px-1">
                   <Type className="h-4 w-4" />
-                  <span className="hidden lg:inline ml-2">Text</span>
+                  <span className="hidden md:inline ml-2 text-xs">Text</span>
                 </TabsTrigger>
-                <TabsTrigger value="image" className="rounded-lg data-[state=active]:bg-background px-2">
+                <TabsTrigger value="image" className="rounded-lg data-[state=active]:bg-background px-1">
                   <ImageIcon className="h-4 w-4" />
-                  <span className="hidden lg:inline ml-2">Images</span>
+                  <span className="hidden md:inline ml-2 text-xs">Images</span>
                 </TabsTrigger>
-                <TabsTrigger value="video" className="rounded-lg data-[state=active]:bg-background px-2">
+                <TabsTrigger value="video" className="rounded-lg data-[state=active]:bg-background px-1">
                   <VideoIcon className="h-4 w-4" />
-                  <span className="hidden lg:inline ml-2">Videos</span>
+                  <span className="hidden md:inline ml-2 text-xs">Videos</span>
                 </TabsTrigger>
-                <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-background px-2">
+                <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-background px-1">
                   <Mic className="h-4 w-4" />
-                  <span className="hidden lg:inline ml-2">Voice</span>
+                  <span className="hidden md:inline ml-2 text-xs">Voice</span>
                 </TabsTrigger>
-                <TabsTrigger value="scribble" className="rounded-lg data-[state=active]:bg-background px-2">
+                <TabsTrigger value="scribble" className="rounded-lg data-[state=active]:bg-background px-1">
                   <PenTool className="h-4 w-4" />
-                  <span className="hidden lg:inline ml-2">Draw</span>
+                  <span className="hidden md:inline ml-2 text-xs">Draw</span>
                 </TabsTrigger>
               </TabsList>
 
-              <div className="mt-4 border rounded-2xl p-4 min-h-[200px] bg-secondary/5">
+              <div className="mt-4 border rounded-2xl p-3 md:p-4 min-h-[200px] bg-secondary/5">
                 <TabsContent value="text" className="m-0">
                   <Textarea 
                     placeholder="Start typing your note here..." 
@@ -201,8 +203,8 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <div className="flex-1 relative">
                       <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        placeholder="Add image or GIF URL..." 
-                        className="pl-9"
+                        placeholder="Add URL..." 
+                        className="pl-9 h-10"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             addMediaByUrl(e.currentTarget.value);
@@ -214,7 +216,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <Button 
                       variant="outline" 
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full sm:w-auto rounded-xl"
+                      className="h-10 rounded-xl"
                     >
                       <Upload className="h-4 w-4 mr-2" />
                       Upload
@@ -237,7 +239,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                           <Button 
                             variant="destructive" 
                             size="icon" 
-                            className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                            className="absolute top-1 right-1 h-7 w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full"
                             onClick={() => removeMedia(idx)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -283,7 +285,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                             <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
                               placeholder="Add video URL..." 
-                              className="pl-9"
+                              className="pl-9 h-10"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   addMediaByUrl(e.currentTarget.value);
@@ -295,7 +297,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                           <Button 
                             variant="outline" 
                             onClick={() => videoInputRef.current?.click()}
-                            className="w-full sm:w-auto rounded-xl"
+                            className="h-10 rounded-xl"
                           >
                             <Film className="h-4 w-4 mr-2" />
                             Browse
@@ -315,14 +317,14 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     )}
 
                     {mediaUrls.length > 0 && mediaType === 'video' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4">
                         {mediaUrls.map((url, idx) => (
                           <div key={idx} className="relative aspect-video rounded-xl overflow-hidden bg-black border group animate-in fade-in zoom-in duration-300">
                              <video src={url} controls className="w-full h-full object-contain" />
                              <Button 
                               variant="destructive" 
                               size="icon" 
-                              className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full z-10"
+                              className="absolute top-2 right-2 h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full z-10"
                               onClick={() => removeMedia(idx)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -335,9 +337,9 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active</span>
+                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground">Up to 200GB Optimized Cloud Storage</span>
+                      <span className="text-[9px] md:text-[10px] text-muted-foreground">Up to 200GB Optimized Cloud Storage</span>
                     </div>
                     
                     <Textarea 
@@ -411,13 +413,14 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         </CardContent>
       </ScrollArea>
 
-      <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card shrink-0 mt-auto">
-        <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium rounded-xl h-12 px-6">
+      {/* Pinned Footer */}
+      <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card/80 backdrop-blur-md shrink-0 z-10">
+        <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium rounded-xl h-11 px-5">
           Discard
         </Button>
         <Button 
           onClick={handleSave} 
-          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[140px] rounded-xl h-12 px-6"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[120px] rounded-xl h-11 px-5"
         >
           <Save className="h-4 w-4 mr-2" /> Save Note
         </Button>

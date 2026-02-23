@@ -24,10 +24,18 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
+                // Initialize Theme
                 if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                   document.documentElement.classList.add('dark')
                 } else {
                   document.documentElement.classList.remove('dark')
+                }
+
+                // Initialize Brightness
+                const savedBrightness = localStorage.getItem('appBrightness');
+                if (savedBrightness) {
+                  const filterValue = parseInt(savedBrightness) / 100;
+                  document.documentElement.style.filter = 'brightness(' + filterValue + ')';
                 }
               } catch (_) {}
             `,
