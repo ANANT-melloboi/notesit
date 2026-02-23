@@ -49,21 +49,20 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     if (savedBrightness) {
       const b = parseInt(savedBrightness);
       setBrightness(b);
-      applyBrightness(b);
     }
   }, []);
 
   const applyBrightness = (value: number) => {
     // We apply brightness as a filter on the html element
-    // 100% is normal, lower is darker
     const filterValue = value / 100;
     document.documentElement.style.filter = `brightness(${filterValue})`;
     localStorage.setItem('appBrightness', value.toString());
   };
 
   const handleBrightnessChange = (val: number[]) => {
-    setBrightness(val[0]);
-    applyBrightness(val[0]);
+    const newVal = val[0];
+    setBrightness(newVal);
+    applyBrightness(newVal);
   };
 
   const toggleTheme = (checked: boolean) => {
