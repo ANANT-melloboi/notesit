@@ -23,8 +23,7 @@ import {
   Cloud,
   Zap,
   Camera,
-  Film,
-  AlertTriangle
+  Film
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -43,7 +42,9 @@ interface NoteEditorProps {
 }
 
 const SUCCESS_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
-const MAX_DOC_SIZE_BYTES = 800000; // ~800KB safety limit for Firestore (1MB limit)
+// Increased to 68MB as requested. Note: Firestore still has a 1MB limit for document data, 
+// so this serves as a high-capacity local buffer for prototyping.
+const MAX_DOC_SIZE_BYTES = 68 * 1024 * 1024; 
 
 export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const [title, setTitle] = useState(initialNote?.title || '');
@@ -88,7 +89,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
       toast({
         variant: "destructive",
         title: "Note Too Large",
-        description: "Your media exceeds the high-capacity vault limit for a single note. Please reduce the number of videos or images.",
+        description: "Your media exceeds the high-capacity vault limit for a single note (68MB).",
       });
       return;
     }
@@ -128,14 +129,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     });
 
     Array.from(files).forEach(file => {
-      if (file.size > MAX_DOC_SIZE_BYTES * 0.8) {
-        toast({
-          variant: "destructive",
-          title: "File Too Large",
-          description: `${file.name} exceeds the optimization limit. Try a shorter clip.`,
-        });
-        return;
-      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setMediaUrls(prev => [...prev, reader.result as string]);
@@ -156,7 +149,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-2xl border-t-4 border-t-primary bg-card glass flex flex-col h-[90vh] md:h-[85vh] overflow-hidden">
-      {/* Pinned Header */}
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b shrink-0 bg-card/50 backdrop-blur-md z-10">
         <div className="space-y-1">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -167,16 +159,13 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
           </CardTitle>
           <p className="text-xs text-muted-foreground hidden sm:block">Changes are synced to your vault automatically.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full h-8 w-8">
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full h-8 w-8">
+          <X className="h-5 w-5" />
+        </Button>
       </CardHeader>
       
-      {/* Scrollable Content */}
       <ScrollArea className="flex-1">
-        <CardContent className="space-y-6 pt-6 pb-24">
+        <CardContent className="space-y-6 pt-6 pb-12">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
             <Input 
@@ -363,41 +352,18 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active</span>
+                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active (68MB Cap)</span>
                       </div>
                     </div>
-                    
-                    <Textarea 
-                      placeholder="Add video notes or transcription..." 
-                      className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                    />
                   </div>
                 </TabsContent>
 
                 <TabsContent value="voice" className="m-0">
-                  <div className="space-y-4">
-                    <VoiceRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
-                    <Textarea 
-                      placeholder="Transcription or additional details..." 
-                      className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                    />
-                  </div>
+                  <VoiceRecorder onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
                 </TabsContent>
 
                 <TabsContent value="scribble" className="m-0">
-                  <div className="space-y-4">
-                    <ScribbleCanvas onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
-                    <Textarea 
-                      placeholder="Note details..." 
-                      className="min-h-[60px] resize-none bg-transparent border-none focus-visible:ring-0"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                    />
-                  </div>
+                  <ScribbleCanvas onSave={(url) => setMediaUrls([url])} initialValue={mediaUrls[0]} />
                 </TabsContent>
               </div>
             </Tabs>
@@ -437,14 +403,13 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         </CardContent>
       </ScrollArea>
 
-      {/* Pinned Footer - Primary Save Action */}
       <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card/80 backdrop-blur-md shrink-0 z-10">
-        <Button variant="outline" onClick={onCancel} className="font-medium rounded-xl h-11 px-5">
+        <Button variant="outline" onClick={onCancel} className="font-medium rounded-xl h-11 px-6">
           Discard
         </Button>
         <Button 
           onClick={handleSave} 
-          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all font-bold min-w-[120px] rounded-xl h-11 px-5"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all font-bold rounded-xl h-11 px-8"
         >
           <Save className="h-4 w-4 mr-2" /> Save Note
         </Button>
