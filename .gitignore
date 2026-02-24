@@ -45,3 +45,21 @@ firebase-debug.log
 firestore-debug.logproject.zip
 project.zip
 node_modules/
+
+
+
+	node_modules/
+.cloudworkstations/
+logs/
+*.log
+^T
+
+
+	
+
+
+
+
+
+
+
