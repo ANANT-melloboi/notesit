@@ -16,15 +16,20 @@ import { toast } from '@/hooks/use-toast';
 
 /**
  * Initiates a setDoc operation for a document reference.
- * Does NOT await the write operation internally.
  */
-export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
-  setDoc(docRef, data, options).catch(error => {
+export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions = { merge: true }) {
+  const promise = setDoc(docRef, data, options).catch(error => {
+    const isSizeError = error.message.toLowerCase().includes('limit') || 
+                        error.message.toLowerCase().includes('large');
+    
     toast({
       variant: "destructive",
-      title: "Sync Failed",
-      description: "Note too large for server or permission denied.",
+      title: isSizeError ? "Sync Limit Exceeded" : "Sync Failed",
+      description: isSizeError 
+        ? "This note is too large for the cloud vault (1MB limit). It will not be found after refresh." 
+        : "The vault rejected this update. Please check your connection.",
     });
+
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
@@ -33,7 +38,9 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
         requestResourceData: data,
       })
     );
+    throw error;
   });
+  return promise;
 }
 
 /**
@@ -42,10 +49,15 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   const promise = addDoc(colRef, data)
     .catch(error => {
+      const isSizeError = error.message.toLowerCase().includes('limit') || 
+                          error.message.toLowerCase().includes('large');
+
       toast({
         variant: "destructive",
         title: "Creation Failed",
-        description: "The note exceeds the 1MB cloud sync limit or permission was denied.",
+        description: isSizeError 
+          ? "The note exceeds the 1MB cloud sync limit. It won't be saved." 
+          : "Could not add note to the vault.",
       });
       const contextualError = new FirestorePermissionError({
         path: colRef.path,
@@ -64,10 +76,14 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
     .catch(error => {
+      const isSizeError = error.message.toLowerCase().includes('limit') || 
+                          error.message.toLowerCase().includes('large');
       toast({
         variant: "destructive",
         title: "Update Failed",
-        description: "The server rejected the update. The note might be too large (1MB limit).",
+        description: isSizeError 
+          ? "Note is now too large to sync (1MB limit)." 
+          : "The server rejected the update.",
       });
       errorEmitter.emit(
         'permission-error',

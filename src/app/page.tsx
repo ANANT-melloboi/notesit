@@ -11,7 +11,7 @@ import { ReminderPrompt } from '@/components/notes/ReminderPrompt';
 import { SplashScreen } from '@/components/layout/SplashScreen';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { collection, doc } from 'firebase/firestore';
 import { 
@@ -74,7 +74,7 @@ export default function Home() {
     setIsEditorOpen(false);
     setEditingNote(undefined);
 
-    const notesRef = collection(firestore, 'users', user.uid, 'notes');
+    const notesColRef = collection(firestore, 'users', user.uid, 'notes');
     
     const payload = {
       ...noteData,
@@ -86,20 +86,23 @@ export default function Home() {
       const noteRef = doc(firestore, 'users', user.uid, 'notes', noteData.id);
       updateDocumentNonBlocking(noteRef, payload);
     } else {
+      // Generate ID on client for optimistic persistence
+      const newNoteRef = doc(notesColRef);
+      const newNoteId = newNoteRef.id;
+      
       const newNote = {
         ...payload,
+        id: newNoteId,
         category: activeCategory === 'Notes' ? 'Notes' : activeCategory,
         createdAt: new Date().toISOString(),
       };
       
       try {
-        const newDocRef = await addDocumentNonBlocking(notesRef, newNote);
-        if (newDocRef) {
-          setLastSavedNoteId(newDocRef.id);
-          setIsReminderPromptOpen(true);
-        }
+        await setDocumentNonBlocking(newNoteRef, newNote);
+        setLastSavedNoteId(newNoteId);
+        setIsReminderPromptOpen(true);
       } catch (err) {
-        // Size or permission errors are handled by the emitter and non-blocking toast
+        // Errors handled by the non-blocking service toasts
       }
     }
   };
