@@ -53,7 +53,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('Notes');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Memoized query for the user's notes - use user.uid for stability
+  // Memoized query for the user's notes - extremely stable reference
   const notesQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'notes');
@@ -70,13 +70,12 @@ export default function Home() {
   const handleSaveNote = async (noteData: Partial<Note>) => {
     if (!firestore || !user) return;
 
-    // Minimize editor immediately for better UX
+    // Minimize editor immediately for the requested UX
     setIsEditorOpen(false);
     setEditingNote(undefined);
 
     const notesRef = collection(firestore, 'users', user.uid, 'notes');
     
-    // Ensure essential fields are present
     const payload = {
       ...noteData,
       userId: user.uid,
@@ -100,7 +99,7 @@ export default function Home() {
           setIsReminderPromptOpen(true);
         }
       } catch (err) {
-        // Errors are handled by the emitter, but we catch the promise rejection here if needed
+        // Size or permission errors are handled by the emitter and non-blocking toast
       }
     }
   };
@@ -132,7 +131,6 @@ export default function Home() {
     }
   };
 
-  // Filter notes based on category and search
   const filteredNotes = (notes || []).filter(n => {
     const matchesSearch = (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (n.content || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -159,7 +157,6 @@ export default function Home() {
     <>
       <SplashScreen />
       <div className="flex h-screen bg-background overflow-hidden font-body animate-in fade-in duration-1000 delay-500">
-        {/* Sidebar */}
         <aside className={`transition-all duration-300 border-r bg-background flex flex-col z-20 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
           <div className="h-16 flex items-center px-6 gap-4">
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -204,7 +201,6 @@ export default function Home() {
           )}
         </aside>
 
-        {/* Main Area */}
         <main className="flex-1 flex flex-col min-w-0">
           <header className="h-16 flex items-center px-4 md:px-8 gap-4 border-b">
             <div className="flex-1 max-w-2xl mx-auto relative group">
@@ -242,8 +238,6 @@ export default function Home() {
 
           <ScrollArea className="flex-1 bg-background">
             <div className="max-w-4xl mx-auto px-4 py-8 space-y-12">
-              
-              {/* Take a Note Bar */}
               <div 
                 className="max-w-xl mx-auto bg-card rounded-lg border shadow-sm p-3 flex items-center gap-4 cursor-text hover:shadow-md transition-all hover:glow-primary group"
                 onClick={() => {
@@ -260,7 +254,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Notes Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
                 {isNotesLoading ? (
                    <div className="col-span-full flex justify-center py-20">
@@ -287,7 +280,6 @@ export default function Home() {
           </ScrollArea>
         </main>
 
-        {/* Dialogs */}
         {isEditorOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-2xl animate-in zoom-in-95 duration-200 h-full flex flex-col justify-center">

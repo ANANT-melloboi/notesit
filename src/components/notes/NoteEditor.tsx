@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Note, MediaType } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +24,8 @@ import {
   Zap,
   Camera,
   Film,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -36,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 interface NoteEditorProps {
   initialNote?: Partial<Note>;
@@ -60,14 +62,14 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const calculateTotalSize = () => {
+  const totalSize = useMemo(() => {
     const mediaSize = mediaUrls.reduce((acc, url) => acc + (url?.length || 0), 0);
     const textSize = (title?.length || 0) + (content?.length || 0) + (passkey?.length || 0);
     return mediaSize + textSize;
-  };
+  }, [title, content, mediaUrls, passkey]);
 
-  const totalSize = calculateTotalSize();
   const isOverServerLimit = totalSize > FIRESTORE_LIMIT_BYTES;
+  const sizePercentage = Math.min((totalSize / FIRESTORE_LIMIT_BYTES) * 100, 100);
 
   const playSuccessSound = () => {
     const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
@@ -79,10 +81,19 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   };
 
   const handleSave = () => {
+    if (!title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Title Required",
+        description: "Please give your note a title before saving.",
+      });
+      return;
+    }
+
     if (isLocked && !passkey) {
       toast({
         variant: "destructive",
-        title: "Passkey required",
+        title: "Passkey Required",
         description: "Please set a passkey to lock this note.",
       });
       return;
@@ -92,7 +103,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
       toast({
         variant: "destructive",
         title: "Capacity Exceeded",
-        description: `Note exceeds the local 68MB capacity limit. Current: ${(totalSize / (1024 * 1024)).toFixed(1)}MB`,
+        description: `Note exceeds the 68MB capacity limit. Current: ${(totalSize / (1024 * 1024)).toFixed(1)}MB`,
       });
       return;
     }
@@ -126,11 +137,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    toast({
-      title: "Optimizing Media",
-      description: "Processing video for secure high-capacity storage...",
-    });
-
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -152,29 +158,38 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-2xl border-t-4 border-t-primary bg-card glass flex flex-col h-[90vh] md:h-[85vh] overflow-hidden">
+      {/* Pinned Header */}
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b shrink-0 bg-card/50 backdrop-blur-md z-10">
         <div className="space-y-1">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             {initialNote?.id ? 'Edit Note' : 'Create New Note'}
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[10px] gap-1 px-2">
-              <Cloud className="h-3 w-3" /> 68MB Vault
+              <Cloud className="h-3 w-3" /> 68MB Storage
             </Badge>
           </CardTitle>
-          <p className="text-xs text-muted-foreground hidden sm:block">Notes are synced securely to your private vault.</p>
+          <div className="flex items-center gap-2">
+            <div className="w-32">
+               <Progress value={sizePercentage} className={cn("h-1", isOverServerLimit ? "bg-destructive/20" : "bg-muted")} />
+            </div>
+            <span className={cn("text-[9px] font-bold uppercase", isOverServerLimit ? "text-destructive" : "text-muted-foreground")}>
+              {isOverServerLimit ? "Server Limit Hit" : `${(totalSize / 1024).toFixed(0)}KB / 1MB Sync`}
+            </span>
+          </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full h-8 w-8">
           <X className="h-5 w-5" />
         </Button>
       </CardHeader>
       
+      {/* Scrollable Content */}
       <ScrollArea className="flex-1">
-        <CardContent className="space-y-6 pt-6 pb-12">
+        <CardContent className="space-y-6 pt-6 pb-20">
           {isOverServerLimit && (
             <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle className="font-bold">Server Limit Warning</AlertTitle>
+              <AlertTitle className="font-bold">Sync Storage Exceeded</AlertTitle>
               <AlertDescription className="text-xs">
-                Firestore documents have a 1MB limit. This note is currently {(totalSize / (1024 * 1024)).toFixed(1)}MB and may not persist after refresh unless broken into multiple notes.
+                Firestore limits each note to 1MB. This note is currently {(totalSize / (1024 * 1024)).toFixed(1)}MB. It will be saved locally but may not sync to your other devices.
               </AlertDescription>
             </Alert>
           )}
@@ -365,8 +380,9 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">High Capacity Support (68MB Cap)</span>
+                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">High Capacity 68MB Vault</span>
                       </div>
+                      <Info className="h-4 w-4 text-primary/40" />
                     </div>
                   </div>
                 </TabsContent>
@@ -416,6 +432,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
         </CardContent>
       </ScrollArea>
 
+      {/* Pinned Footer */}
       <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card/80 backdrop-blur-md shrink-0 z-10">
         <Button variant="outline" onClick={onCancel} className="font-medium rounded-xl h-11 px-6">
           Discard

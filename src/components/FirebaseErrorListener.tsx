@@ -17,16 +17,22 @@ export function FirebaseErrorListener() {
 
   useEffect(() => {
     const handleError = (error: FirestorePermissionError) => {
-      // In development, we want the hard crash to catch issues
-      if (process.env.NODE_ENV === 'development') {
+      // In development, we want the hard crash only for real permission issues.
+      // For size errors, we show a toast to prevent Application Error screen.
+      const isSizeError = error.message.toLowerCase().includes('limit') || 
+                          error.message.toLowerCase().includes('large');
+
+      if (process.env.NODE_ENV === 'development' && !isSizeError) {
         setError(error);
       } else {
-        // In production/deployment, we show a non-crashing toast
+        // In production or for size errors, we show a non-crashing toast
         console.error("Firebase Operation Error:", error.message);
         toast({
           variant: "destructive",
           title: "Cloud Sync Error",
-          description: "We couldn't save your note to the vault. It might be too large or you might need to sign in again.",
+          description: isSizeError 
+            ? "This note is too large for cloud sync (1MB limit). It's saved locally for now." 
+            : "We couldn't save your note to the vault. Please check your connection or sign in again.",
         });
       }
     };
@@ -38,7 +44,7 @@ export function FirebaseErrorListener() {
     };
   }, [toast]);
 
-  // On re-render in dev, if an error exists in state, throw it.
+  // Only throw if we have a critical permission error in dev
   if (error) {
     throw error;
   }
