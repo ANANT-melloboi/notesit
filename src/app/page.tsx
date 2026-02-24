@@ -36,10 +36,12 @@ import {
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
   const router = useRouter();
+  const { toast } = useToast();
   
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -51,11 +53,11 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('Notes');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Memoized query for the user's notes
+  // Memoized query for the user's notes - use user.uid for stability
   const notesQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'notes');
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: notes, isLoading: isNotesLoading } = useCollection<Note>(notesQuery);
 
@@ -74,25 +76,31 @@ export default function Home() {
 
     const notesRef = collection(firestore, 'users', user.uid, 'notes');
     
+    // Ensure essential fields are present
+    const payload = {
+      ...noteData,
+      userId: user.uid,
+      updatedAt: new Date().toISOString()
+    };
+
     if (noteData.id) {
       const noteRef = doc(firestore, 'users', user.uid, 'notes', noteData.id);
-      updateDocumentNonBlocking(noteRef, {
-        ...noteData,
-        userId: user.uid,
-        updatedAt: new Date().toISOString()
-      });
+      updateDocumentNonBlocking(noteRef, payload);
     } else {
-      const newDocRef = await addDocumentNonBlocking(notesRef, {
-        ...noteData,
-        userId: user.uid,
+      const newNote = {
+        ...payload,
         category: activeCategory === 'Notes' ? 'Notes' : activeCategory,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      };
       
-      if (newDocRef) {
-        setLastSavedNoteId(newDocRef.id);
-        setIsReminderPromptOpen(true);
+      try {
+        const newDocRef = await addDocumentNonBlocking(notesRef, newNote);
+        if (newDocRef) {
+          setLastSavedNoteId(newDocRef.id);
+          setIsReminderPromptOpen(true);
+        }
+      } catch (err) {
+        // Errors are handled by the emitter, but we catch the promise rejection here if needed
       }
     }
   };
@@ -128,7 +136,6 @@ export default function Home() {
   const filteredNotes = (notes || []).filter(n => {
     const matchesSearch = (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (n.content || '').toLowerCase().includes(searchQuery.toLowerCase());
-    // "Notes" is the default view showing everything
     const matchesCategory = activeCategory === 'Notes' || n.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
@@ -283,7 +290,7 @@ export default function Home() {
         {/* Dialogs */}
         {isEditorOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-2xl animate-in zoom-in-95 duration-200 h-full flex flex-col justify-center">
               <NoteEditor 
                 initialNote={editingNote} 
                 onSave={handleSaveNote} 
@@ -295,7 +302,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
 
         <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         <AboutDialog isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />

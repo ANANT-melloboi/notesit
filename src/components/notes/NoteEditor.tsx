@@ -23,7 +23,8 @@ import {
   Cloud,
   Zap,
   Camera,
-  Film
+  Film,
+  AlertTriangle
 } from 'lucide-react';
 import { ScribbleCanvas } from './ScribbleCanvas';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -34,6 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface NoteEditorProps {
   initialNote?: Partial<Note>;
@@ -42,9 +44,8 @@ interface NoteEditorProps {
 }
 
 const SUCCESS_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
-// Increased to 68MB as requested. Note: Firestore still has a 1MB limit for document data, 
-// so this serves as a high-capacity local buffer for prototyping.
-const MAX_DOC_SIZE_BYTES = 68 * 1024 * 1024; 
+const MAX_LOCAL_SIZE_BYTES = 68 * 1024 * 1024; // 68MB per user request
+const FIRESTORE_LIMIT_BYTES = 1024 * 1024; // 1MB Server Limit
 
 export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const [title, setTitle] = useState(initialNote?.title || '');
@@ -65,6 +66,9 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     return mediaSize + textSize;
   };
 
+  const totalSize = calculateTotalSize();
+  const isOverServerLimit = totalSize > FIRESTORE_LIMIT_BYTES;
+
   const playSuccessSound = () => {
     const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
     if (soundEnabled) {
@@ -84,12 +88,11 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
       return;
     }
 
-    const totalSize = calculateTotalSize();
-    if (totalSize > MAX_DOC_SIZE_BYTES) {
+    if (totalSize > MAX_LOCAL_SIZE_BYTES) {
       toast({
         variant: "destructive",
-        title: "Note Too Large",
-        description: "Your media exceeds the high-capacity vault limit for a single note (68MB).",
+        title: "Capacity Exceeded",
+        description: `Note exceeds the local 68MB capacity limit. Current: ${(totalSize / (1024 * 1024)).toFixed(1)}MB`,
       });
       return;
     }
@@ -124,8 +127,8 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
     if (!files || files.length === 0) return;
 
     toast({
-      title: "Processing Media",
-      description: "Optimizing videos for high-capacity cloud sync...",
+      title: "Optimizing Media",
+      description: "Processing video for secure high-capacity storage...",
     });
 
     Array.from(files).forEach(file => {
@@ -154,10 +157,10 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             {initialNote?.id ? 'Edit Note' : 'Create New Note'}
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[10px] gap-1 px-2">
-              <Cloud className="h-3 w-3" /> Secure Sync
+              <Cloud className="h-3 w-3" /> 68MB Vault
             </Badge>
           </CardTitle>
-          <p className="text-xs text-muted-foreground hidden sm:block">Changes are synced to your vault automatically.</p>
+          <p className="text-xs text-muted-foreground hidden sm:block">Notes are synced securely to your private vault.</p>
         </div>
         <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full h-8 w-8">
           <X className="h-5 w-5" />
@@ -166,11 +169,21 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
       
       <ScrollArea className="flex-1">
         <CardContent className="space-y-6 pt-6 pb-12">
+          {isOverServerLimit && (
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="font-bold">Server Limit Warning</AlertTitle>
+              <AlertDescription className="text-xs">
+                Firestore documents have a 1MB limit. This note is currently {(totalSize / (1024 * 1024)).toFixed(1)}MB and may not persist after refresh unless broken into multiple notes.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
             <Input 
               id="title"
-              placeholder="What's this note about?" 
+              placeholder="Enter note title..." 
               value={title} 
               onChange={(e) => setTitle(e.target.value)}
               className="text-lg font-medium border-none bg-muted/30 focus-visible:glow-primary transition-all h-12"
@@ -218,7 +231,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <div className="flex-1 relative">
                       <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        placeholder="Add URL..." 
+                        placeholder="Add image URL..." 
                         className="pl-9 h-10"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -352,7 +365,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active (68MB Cap)</span>
+                        <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">High Capacity Support (68MB Cap)</span>
                       </div>
                     </div>
                   </div>
