@@ -59,8 +59,8 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const { toast } = useToast();
 
   const calculateTotalSize = () => {
-    const mediaSize = mediaUrls.reduce((acc, url) => acc + url.length, 0);
-    const textSize = title.length + content.length + passkey.length;
+    const mediaSize = mediaUrls.reduce((acc, url) => acc + (url?.length || 0), 0);
+    const textSize = (title?.length || 0) + (content?.length || 0) + (passkey?.length || 0);
     return mediaSize + textSize;
   };
 
@@ -165,7 +165,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               <Cloud className="h-3 w-3" /> Secure Sync
             </Badge>
           </CardTitle>
-          <p className="text-xs text-muted-foreground hidden sm:block">Changes are synced to your vault automatically on save.</p>
+          <p className="text-xs text-muted-foreground hidden sm:block">Changes are synced to your vault automatically.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full h-8 w-8">
@@ -265,7 +265,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                           <Button 
                             variant="destructive" 
                             size="icon" 
-                            className="absolute top-1 right-1 h-7 w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full"
+                            className="absolute top-1 right-1 h-7 w-7 rounded-full"
                             onClick={() => removeMedia(idx)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -350,7 +350,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                              <Button 
                               variant="destructive" 
                               size="icon" 
-                              className="absolute top-2 right-2 h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full z-10"
+                              className="absolute top-2 right-2 h-8 w-8 rounded-full z-10"
                               onClick={() => removeMedia(idx)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -365,7 +365,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                         <Zap className="h-4 w-4 text-primary" />
                         <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wider">Pro Capacity Sync Active</span>
                       </div>
-                      <span className="text-[9px] md:text-[10px] text-muted-foreground">Up to 200GB Optimized Cloud Storage</span>
                     </div>
                     
                     <Textarea 
@@ -404,31 +403,30 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
             </Tabs>
           </div>
 
-          <div className="flex flex-col gap-4 p-4 rounded-2xl bg-accent/5 border border-accent/20 transition-all hover:bg-accent/10">
+          <div className="flex flex-col gap-4 p-4 rounded-2xl bg-accent/5 border border-accent/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className={cn("p-2 rounded-xl transition-all", isLocked ? "bg-accent/20 glow-accent" : "bg-muted")}>
-                  <Lock className={cn("h-4 w-4 transition-colors", isLocked ? "text-accent" : "text-muted-foreground")} />
+                <div className={cn("p-2 rounded-xl", isLocked ? "bg-accent/20" : "bg-muted")}>
+                  <Lock className={cn("h-4 w-4", isLocked ? "text-accent" : "text-muted-foreground")} />
                 </div>
                 <div className="space-y-0.5">
-                  <Label htmlFor="lock-toggle" className="text-sm font-bold cursor-pointer">Security Lock</Label>
-                  <p className="text-xs text-muted-foreground">Protect this content with a private passkey.</p>
+                  <Label htmlFor="lock-toggle" className="text-sm font-bold">Security Lock</Label>
+                  <p className="text-xs text-muted-foreground">Protect content with a passkey.</p>
                 </div>
               </div>
               <Switch 
                 id="lock-toggle" 
                 checked={isLocked} 
                 onCheckedChange={setIsLocked}
-                className="data-[state=checked]:bg-accent"
               />
             </div>
             {isLocked && (
-              <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+              <div className="space-y-2">
                 <Label htmlFor="passkey" className="text-xs font-semibold uppercase text-muted-foreground">Set Passkey</Label>
                 <Input 
                   id="passkey"
                   type="password"
-                  placeholder="Enter a secret code" 
+                  placeholder="Enter secret code" 
                   value={passkey} 
                   onChange={(e) => setPasskey(e.target.value)}
                   className="bg-background focus-visible:glow-accent border-accent/20 rounded-xl"
@@ -436,26 +434,17 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
               </div>
             )}
           </div>
-
-          {calculateTotalSize() > MAX_DOC_SIZE_BYTES * 0.7 && (
-            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
-              <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
-              <p className="text-[10px] font-medium text-destructive leading-tight">
-                Warning: This note is approaching the cloud storage limit for single-note sync. Consider splitting media across multiple notes.
-              </p>
-            </div>
-          )}
         </CardContent>
       </ScrollArea>
 
-      {/* Pinned Footer */}
+      {/* Pinned Footer - Primary Save Action */}
       <CardFooter className="flex justify-end gap-3 p-4 border-t bg-card/80 backdrop-blur-md shrink-0 z-10">
-        <Button variant="outline" onClick={onCancel} className="hover:bg-muted font-medium rounded-xl h-11 px-5">
+        <Button variant="outline" onClick={onCancel} className="font-medium rounded-xl h-11 px-5">
           Discard
         </Button>
         <Button 
           onClick={handleSave} 
-          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all active:scale-95 font-bold min-w-[120px] rounded-xl h-11 px-5"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary transition-all font-bold min-w-[120px] rounded-xl h-11 px-5"
         >
           <Save className="h-4 w-4 mr-2" /> Save Note
         </Button>

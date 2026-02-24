@@ -68,21 +68,24 @@ export default function Home() {
   const handleSaveNote = async (noteData: Partial<Note>) => {
     if (!firestore || !user) return;
 
+    // Minimize editor immediately for better UX
+    setIsEditorOpen(false);
+    setEditingNote(undefined);
+
     const notesRef = collection(firestore, 'users', user.uid, 'notes');
     
     if (noteData.id) {
       const noteRef = doc(firestore, 'users', user.uid, 'notes', noteData.id);
       updateDocumentNonBlocking(noteRef, {
         ...noteData,
+        userId: user.uid,
         updatedAt: new Date().toISOString()
       });
-      setIsEditorOpen(false);
-      setEditingNote(undefined);
     } else {
       const newDocRef = await addDocumentNonBlocking(notesRef, {
         ...noteData,
         userId: user.uid,
-        category: activeCategory,
+        category: activeCategory === 'Notes' ? 'Notes' : activeCategory,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -91,9 +94,6 @@ export default function Home() {
         setLastSavedNoteId(newDocRef.id);
         setIsReminderPromptOpen(true);
       }
-      
-      setIsEditorOpen(false);
-      setEditingNote(undefined);
     }
   };
 
@@ -128,7 +128,8 @@ export default function Home() {
   const filteredNotes = (notes || []).filter(n => {
     const matchesSearch = (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (n.content || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = n.category === activeCategory || activeCategory === 'Notes';
+    // "Notes" is the default view showing everything
+    const matchesCategory = activeCategory === 'Notes' || n.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -239,7 +240,7 @@ export default function Home() {
               <div 
                 className="max-w-xl mx-auto bg-card rounded-lg border shadow-sm p-3 flex items-center gap-4 cursor-text hover:shadow-md transition-all hover:glow-primary group"
                 onClick={() => {
-                  setEditingNote({ category: activeCategory, mediaType: 'text' });
+                  setEditingNote({ category: activeCategory === 'Notes' ? 'Notes' : activeCategory, mediaType: 'text' });
                   setIsEditorOpen(true);
                 }}
               >
